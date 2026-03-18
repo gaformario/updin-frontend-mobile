@@ -34,7 +34,10 @@ export function AppButton({
         : colors.brand.pink;
 
   const content = loading ? (
-    <ActivityIndicator color="#FFF" />
+    <View style={styles.loadingContent}>
+      <ActivityIndicator color="#FFF" />
+      {/* <Text style={styles.text}>Entrando...</Text> */}
+    </View>
   ) : (
     <Text style={styles.text}>{title}</Text>
   );
@@ -69,5 +72,10 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontSize: 16,
     fontWeight: "700",
+  },
+  loadingContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
 });

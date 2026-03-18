@@ -1,29 +1,32 @@
 import { AppButton } from "@/components/ui/AppButton";
 import { ScreenContainer } from "@/components/ui/ScreenContainer";
 import { colors } from "@/constants/colors";
+import { homeStyles } from "@/styles/home-page";
 import { AntDesign, FontAwesome } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image, Text, View } from "react-native";
 
 export default function LoginGeralScreen() {
   return (
     <ScreenContainer backgroundColor={colors.brand.home}>
-      <View style={styles.wrapper}>
+      <View style={homeStyles.wrapper}>
         <Image
           source={require("@/assets/images/Updin-Logo.png")}
-          style={styles.logoImage}
+          style={homeStyles.logoImage}
           resizeMode="contain"
         />
-        <View style={styles.card}>
-          <Text style={styles.logo}>
+        <View style={homeStyles.card}>
+          <Text style={homeStyles.logo}>
             <FontAwesome name="play-circle" size={32} /> Updin
           </Text>
-          <Text style={styles.subtitle}>Educacao financeira gamificada</Text>
+          <Text style={homeStyles.subtitle}>
+            Educação Financeira Gamificada
+          </Text>
 
-          <View style={styles.buttons}>
+          <View style={homeStyles.buttons}>
             <AppButton
-              title="Sou Responsavel"
+              title="Sou Responsável"
               variant="blue"
               onPress={() => router.push("/login-responsavel")}
             />
@@ -36,9 +39,9 @@ export default function LoginGeralScreen() {
           </View>
         </View>
       </View>
-      <View style={styles.footer}>
+      <View style={homeStyles.footer}>
         <AntDesign name="copyright" size={14} color="#9CA3AF" />
-        <Text style={styles.footerText}>
+        <Text style={homeStyles.footerText}>
           {" "}
           Updin • 2026 • Todos os direitos reservados
         </Text>
@@ -46,49 +49,3 @@ export default function LoginGeralScreen() {
     </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  card: {
-    backgroundColor: "#F3F4F6",
-    borderRadius: 28,
-    padding: 28,
-  },
-  logo: {
-    fontSize: 32,
-    fontWeight: "700",
-    textAlign: "center",
-    color: colors.neutral.text,
-    marginBottom: 8,
-  },
-  subtitle: {
-    textAlign: "center",
-    fontSize: 16,
-    color: colors.neutral.muted,
-    marginBottom: 28,
-  },
-  buttons: {
-    gap: 14,
-  },
-  logoImage: {
-    width: 100,
-    height: 100,
-    alignSelf: "center",
-    marginBottom: 16,
-    transform: [{ scale: 2.5 }],
-  },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingBottom: 10,
-  },
-
-  footerText: {
-    color: "#9CA3AF",
-    fontSize: 12,
-  },
-});

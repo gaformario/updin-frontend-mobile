@@ -3,13 +3,16 @@ import { AppInput } from "@/components/ui/AppInput";
 import { GradientIcon } from "@/components/ui/GradientIcon";
 import { colors } from "@/constants/colors";
 import { useAuth } from "@/features/auth/context/AuthContext";
+import { loginAdolescenteStyles } from "@/styles/login-adolescente";
 import { Entypo, Feather, Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Text, TouchableOpacity, View } from "react-native";
 import { z } from "zod";
+
+const HOME_ROUTE = "/home";
 
 const loginAdolescenteSchema = z.object({
   login: z.string().min(1, "Informe seu usuário"),
@@ -54,24 +57,26 @@ export default function LoginAdolescenteScreen() {
       end={{ x: 0, y: 1 }}
       style={{ flex: 1 }}
     >
-      <View style={styles.wrapper}>
-        <View style={styles.card}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.back}>←</Text>
+      <View style={loginAdolescenteStyles.wrapper}>
+        <View style={loginAdolescenteStyles.card}>
+          <TouchableOpacity onPress={() => router.replace(HOME_ROUTE)}>
+            <Text style={loginAdolescenteStyles.back}>←</Text>
           </TouchableOpacity>
 
-          <View style={styles.emoji}>
+          <View style={loginAdolescenteStyles.emoji}>
             <GradientIcon
               size={50}
               colors={colors.gradients.button}
               icon={<Entypo name="game-controller" size={50} color="#000" />}
             />
           </View>
-          <Text style={styles.title}>Área do Adolescente</Text>
-          <Text style={styles.subtitle}>Entre e comece a conquistar!</Text>
+          <Text style={loginAdolescenteStyles.title}>Área do Adolescente</Text>
+          <Text style={loginAdolescenteStyles.subtitle}>
+            Entre e comece a conquistar!
+          </Text>
 
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>
+          <View style={loginAdolescenteStyles.badge}>
+            <Text style={loginAdolescenteStyles.badgeText}>
               <Ionicons name="sparkles" color={colors.brand.yellow} size={16} />{" "}
               Complete missões e ganhe recompensas!
             </Text>
@@ -82,7 +87,7 @@ export default function LoginAdolescenteScreen() {
             name="login"
             render={({ field: { onChange, value } }) => (
               <AppInput
-                label="Usuario"
+                label="Usuário"
                 placeholder="seu.usuario"
                 value={value}
                 onChangeText={onChange}
@@ -124,51 +129,3 @@ export default function LoginAdolescenteScreen() {
     </LinearGradient>
   );
 }
-
-const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 12,
-  },
-  card: {
-    backgroundColor: colors.neutral.white,
-    borderRadius: 28,
-    padding: 24,
-  },
-  back: {
-    fontSize: 28,
-    color: colors.neutral.muted,
-    marginBottom: 12,
-  },
-  emoji: {
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  title: {
-    textAlign: "center",
-    fontSize: 28,
-    fontWeight: "700",
-    color: colors.neutral.text,
-    marginBottom: 8,
-  },
-  subtitle: {
-    textAlign: "center",
-    color: colors.neutral.muted,
-    marginBottom: 20,
-  },
-  badge: {
-    backgroundColor: "#F3E8FF",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    marginBottom: 20,
-  },
-  badgeText: {
-    textAlign: "center",
-    color: colors.brand.purple,
-    fontSize: 15,
-    fontWeight: "600",
-  },
-});

@@ -3,12 +3,16 @@ import { AppInput } from "@/components/ui/AppInput";
 import { ScreenContainer } from "@/components/ui/ScreenContainer";
 import { colors } from "@/constants/colors";
 import { useAuth } from "@/features/auth/context/AuthContext";
+import { loginResponsavelStyles } from "@/styles/login-responsavel";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Text, TouchableOpacity, View } from "react-native";
 import { z } from "zod";
+
+const RESPONSAVEL_HOME = "/responsavel/selecionar-adolescente";
+const HOME_ROUTE = "/home";
 
 const loginResponsavelSchema = z.object({
   login: z.string().min(1, "Informe e-mail ou CPF"),
@@ -34,13 +38,15 @@ export default function LoginResponsavelScreen() {
 
   async function onSubmit(data: LoginResponsavelFormData) {
     try {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
       await signIn({
         login: data.login,
         senha: data.senha,
         tipo: "responsavel",
       });
 
-      router.replace("/(protected)/responsavel/home");
+      router.replace(RESPONSAVEL_HOME as any);
     } catch {
       Alert.alert("Erro", "Não foi possível entrar.");
     }
@@ -48,21 +54,27 @@ export default function LoginResponsavelScreen() {
 
   return (
     <ScreenContainer backgroundColor={colors.brand.blue}>
-      <View style={styles.wrapper}>
-        <View style={styles.card}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.back}>←</Text>
+      <View style={loginResponsavelStyles.wrapper}>
+        <View style={loginResponsavelStyles.card}>
+          <TouchableOpacity
+            onPress={() => router.replace(HOME_ROUTE)}
+            disabled={isSubmitting}
+          >
+            <Text style={loginResponsavelStyles.back}>←</Text>
           </TouchableOpacity>
 
-          <View style={styles.emoji}>
+          <View style={loginResponsavelStyles.emoji}>
             <MaterialCommunityIcons
               name="account-child-circle"
               color={colors.brand.blue}
               size={50}
             />
           </View>
-          <Text style={styles.title}>Área do Responsável</Text>
-          <Text style={styles.subtitle}>Acesse sua conta para gerenciar</Text>
+
+          <Text style={loginResponsavelStyles.title}>Área do Responsável</Text>
+          <Text style={loginResponsavelStyles.subtitle}>
+            Acesse sua conta para gerenciar
+          </Text>
 
           <Controller
             control={control}
@@ -106,62 +118,23 @@ export default function LoginResponsavelScreen() {
             onPress={handleSubmit(onSubmit)}
           />
 
-          <TouchableOpacity style={styles.linkButton}>
-            <Text style={styles.link}>Esqueci minha senha</Text>
+          <TouchableOpacity
+            style={loginResponsavelStyles.linkButton}
+            disabled={isSubmitting}
+          >
+            <Text style={loginResponsavelStyles.link}>Esqueci minha senha</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.linkButton}>
-            <Text style={styles.secondaryLink}>Criar conta</Text>
+          <TouchableOpacity
+            style={loginResponsavelStyles.linkButton}
+            disabled={isSubmitting}
+          >
+            <Text style={loginResponsavelStyles.secondaryLink}>
+              Criar conta
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
     </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  card: {
-    backgroundColor: colors.neutral.card,
-    borderRadius: 28,
-    padding: 24,
-  },
-  back: {
-    fontSize: 28,
-    color: colors.neutral.muted,
-    marginBottom: 12,
-  },
-  emoji: {
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  title: {
-    textAlign: "center",
-    fontSize: 28,
-    fontWeight: "700",
-    color: colors.neutral.text,
-    marginBottom: 8,
-  },
-  subtitle: {
-    textAlign: "center",
-    color: colors.neutral.muted,
-    marginBottom: 24,
-  },
-  linkButton: {
-    marginTop: 12,
-  },
-  link: {
-    textAlign: "center",
-    color: colors.brand.blue,
-    fontWeight: "600",
-  },
-  secondaryLink: {
-    textAlign: "center",
-    color: colors.neutral.muted,
-    fontWeight: "500",
-  },
-});
