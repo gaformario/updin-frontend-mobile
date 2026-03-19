@@ -8,7 +8,7 @@ import type {
 } from "@/types/painel-financeiro";
 import { formatCurrency } from "@/utils/currency";
 import { getInitials } from "@/utils/initials";
-import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
@@ -109,7 +109,11 @@ function MissaoRow({
           { backgroundColor: precisaValidar ? "#FDE7D8" : "#E5E7EB" },
         ]}
       >
-        <Feather name="eye" size={16} color={statusColor} />
+        <Feather
+          name={precisaValidar ? "clock" : "target"}
+          size={16}
+          color={statusColor}
+        />
       </View>
 
       <View style={stylePainel.rowContent}>
@@ -269,9 +273,7 @@ export default function AdolescentePainelFinanceiroScreen() {
             onPress={handleOpenConfigurarMesada}
           />
           <ActionCard
-            icon={
-              <MaterialCommunityIcons name="target" size={22} color="#A855F7" />
-            }
+            icon={<Feather name="target" size={22} color="#A855F7" />}
             label="Criar Missão"
             onPress={handleOpenCriarMissao}
           />

@@ -91,7 +91,7 @@ export default function CriarMissaoScreen() {
         <View style={criarMissaoStyles.card}>
           <Text style={criarMissaoStyles.label}>Titulo da Missão</Text>
           <View style={criarMissaoStyles.inputRow}>
-            <Feather name="eye" size={16} color="#98A2B3" />
+            <Feather name="target" size={16} color="#98A2B3" />
             <TextInput
               value={titulo}
               onChangeText={setTitulo}
