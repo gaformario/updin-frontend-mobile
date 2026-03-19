@@ -9,8 +9,9 @@ import type {
 import { formatCurrency } from "@/utils/currency";
 import { getInitials } from "@/utils/initials";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import {
   SafeAreaView,
@@ -42,10 +43,16 @@ function ActionCard({
 }
 
 function ExtratoRow({ item }: { item: ExtratoItem }) {
+  const isMesada = item.titulo.toLowerCase().includes("mesada");
+
+  const iconName = isMesada ? "dollar-sign" : "check-circle";
+  const iconColor = isMesada ? "#2563EB" : "#7C3AED";
+  const bgColor = isMesada ? "#DBEAFE" : "#EDE9FE";
+
   return (
     <View style={stylePainel.row}>
-      <View style={[stylePainel.rowIcon, { backgroundColor: "#DBEAFE" }]}>
-        <Feather name="dollar-sign" size={16} color="#2563EB" />
+      <View style={[stylePainel.rowIcon, { backgroundColor: bgColor }]}>
+        <Feather name={iconName} size={16} color={iconColor} />
       </View>
 
       <View style={stylePainel.rowContent}>
@@ -66,24 +73,42 @@ function ExtratoRow({ item }: { item: ExtratoItem }) {
   );
 }
 
-function MissaoRow({ item }: { item: MissaoAtiva }) {
-  const statusColor =
-    item.status === "aguardando_validacao"
-      ? "#F97316"
-      : item.status === "em_andamento"
-        ? "#6B7280"
-        : "#6B7280";
-
-  const statusLabel =
-    item.status === "aguardando_validacao"
-      ? "Aguardando validacao"
-      : item.status === "em_andamento"
-        ? "Em andamento"
+function MissaoRow({
+  adolescenteId,
+  item,
+}: {
+  adolescenteId: string;
+  item: MissaoAtiva;
+}) {
+  const precisaValidar = item.status === "aguardando_validacao";
+  const statusColor = precisaValidar ? "#F97316" : "#6B7280";
+  const statusLabel = precisaValidar
+    ? "Aguardando validação"
+    : item.status === "em_andamento"
+      ? "Em andamento"
+      : item.status === "aprovada"
+        ? "Aprovada"
         : "Pendente";
 
+  function handleOpenValidacao() {
+    router.push(
+      `${RESPONSAVEL_ADOLESCENTE_ROUTE}/${adolescenteId}/validar-missao/${item.id}` as any,
+    );
+  }
+
   return (
-    <View style={stylePainel.row}>
-      <View style={[stylePainel.rowIcon, { backgroundColor: "#FDE7D8" }]}>
+    <TouchableOpacity
+      activeOpacity={precisaValidar ? 0.82 : 1}
+      style={stylePainel.row}
+      onPress={precisaValidar ? handleOpenValidacao : undefined}
+      disabled={!precisaValidar}
+    >
+      <View
+        style={[
+          stylePainel.rowIcon,
+          { backgroundColor: precisaValidar ? "#FDE7D8" : "#E5E7EB" },
+        ]}
+      >
         <Feather name="eye" size={16} color={statusColor} />
       </View>
 
@@ -92,15 +117,23 @@ function MissaoRow({ item }: { item: MissaoAtiva }) {
         <Text style={stylePainel.rowSubtitle}>{statusLabel}</Text>
       </View>
 
-      <View>
-        <Text style={[stylePainel.rowValue, { color: "#A855F7" }]}>
-          {formatCurrency(item.recompensa)}
-        </Text>
-        {item.status === "aguardando_validacao" ? (
-          <Text style={stylePainel.validarText}>Validar</Text>
-        ) : null}
+      <View style={stylePainel.missaoMeta}>
+        <View style={stylePainel.rewardRow}>
+          <Text style={[stylePainel.rowValue, { color: "#A855F7" }]}>
+            {formatCurrency(item.recompensa)}
+          </Text>
+          {precisaValidar ? (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleOpenValidacao}
+              style={stylePainel.warningButton}
+            >
+              <Feather name="alert-circle" size={18} color="#F97316" />
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -108,37 +141,28 @@ export default function AdolescentePainelFinanceiroScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
-  const [painelFinanceiro, setpainelFinanceiro] =
+  const [painelFinanceiro, setPainelFinanceiro] =
     useState<AdolescentePainelFinanceiro | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let active = true;
-
-    async function carregar() {
-      if (!id) {
-        if (active) {
-          setpainelFinanceiro(null);
-          setLoading(false);
-        }
-        return;
-      }
-
-      const data = await buscarPainelFinanceiroDoAdolescente(String(id));
-
-      if (active) {
-        setpainelFinanceiro(data ?? null);
-        setLoading(false);
-      }
+  const carregarPainel = useCallback(async () => {
+    if (!id) {
+      setPainelFinanceiro(null);
+      setLoading(false);
+      return;
     }
 
     setLoading(true);
-    void carregar();
-
-    return () => {
-      active = false;
-    };
+    const data = await buscarPainelFinanceiroDoAdolescente(String(id));
+    setPainelFinanceiro(data ?? null);
+    setLoading(false);
   }, [id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void carregarPainel();
+    }, [carregarPainel]),
+  );
 
   function handleOpenConfigurarMesada() {
     router.push(
@@ -168,7 +192,7 @@ export default function AdolescentePainelFinanceiroScreen() {
           style={stylePainel.emptyButton}
           onPress={() => router.replace(RESPONSAVEL_SELECT_ROUTE as any)}
         >
-          <Text style={stylePainel.emptyButtonText}>Voltar para seleção</Text>
+          <Text style={stylePainel.emptyButtonText}>Voltar para selecao</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -230,7 +254,7 @@ export default function AdolescentePainelFinanceiroScreen() {
             </View>
 
             <View style={stylePainel.balanceMiniCard}>
-              <Text style={stylePainel.miniLabel}>Variável (20%)</Text>
+              <Text style={stylePainel.miniLabel}>Variavel (20%)</Text>
               <Text style={stylePainel.miniValue}>
                 {formatCurrency(painelFinanceiro.variavel)}
               </Text>
@@ -268,7 +292,11 @@ export default function AdolescentePainelFinanceiroScreen() {
           <Text style={stylePainel.sectionTitle}>Missões Ativas</Text>
 
           {painelFinanceiro.missoesAtivas.map((item) => (
-            <MissaoRow key={item.id} item={item} />
+            <MissaoRow
+              key={item.id}
+              adolescenteId={painelFinanceiro.adolescenteId}
+              item={item}
+            />
           ))}
         </View>
       </ScrollView>

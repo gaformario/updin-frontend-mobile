@@ -205,11 +205,18 @@ export const stylePainel = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
   },
-  validarText: {
-    color: "#F97316",
-    fontSize: 12,
-    fontWeight: "600",
-    textAlign: "right",
-    marginTop: 2,
+  missaoMeta: {
+    alignItems: "flex-end",
+  },
+  rewardRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  warningButton: {
+    width: 24,
+    height: 24,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
