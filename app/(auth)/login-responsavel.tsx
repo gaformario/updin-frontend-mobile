@@ -4,6 +4,7 @@ import { ScreenContainer } from "@/components/ui/ScreenContainer";
 import { colors } from "@/constants/colors";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { loginResponsavelStyles } from "@/styles/login-responsavel";
+import { getErrorMessage } from "@/utils/errors";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
@@ -38,8 +39,6 @@ export default function LoginResponsavelScreen() {
 
   async function onSubmit(data: LoginResponsavelFormData) {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
       await signIn({
         login: data.login,
         senha: data.senha,
@@ -47,8 +46,8 @@ export default function LoginResponsavelScreen() {
       });
 
       router.replace(RESPONSAVEL_HOME as any);
-    } catch {
-      Alert.alert("Erro", "Não foi possível entrar.");
+    } catch (error) {
+      Alert.alert("Erro", getErrorMessage(error));
     }
   }
 

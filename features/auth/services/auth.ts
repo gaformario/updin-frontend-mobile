@@ -1,68 +1,117 @@
-import type { LoginPayload, LoginResponse } from "@/features/auth/types";
-
+import { buscarAdolescentePorId } from "@/services/adolescente";
 import {
-  isValidCpf,
-  isValidEmail,
-  mockAccounts,
-  normalizeCpf,
-} from "./mock-auth";
+  api,
+  isApiConnectionError,
+  setApiAuthToken,
+} from "@/services/api-client";
+import { buscarResponsavelMe } from "@/services/responsavel";
+import type { AuthMeResponse, LoginResponse } from "@/types/api";
 
-function normalizeLogin(value: string) {
-  return value.trim().toLowerCase();
+import type { AuthSession, LoginPayload } from "@/features/auth/types";
+
+function getPerfilId(params: {
+  usuarioTipo: LoginPayload["tipo"] | AuthMeResponse["tipo"];
+  perfis?: LoginResponse["perfis"];
+  previousSession?: Partial<AuthSession> | null;
+}) {
+  const { usuarioTipo, perfis, previousSession } = params;
+
+  if (usuarioTipo === "responsavel") {
+    return perfis?.responsavelId ?? previousSession?.perfis?.responsavelId ?? null;
+  }
+
+  return (
+    perfis?.adolescenteId ??
+    previousSession?.perfis?.adolescenteId ??
+    previousSession?.perfil?.id ??
+    null
+  );
 }
 
-export async function signInRequest(
-  payload: LoginPayload,
-): Promise<LoginResponse> {
-  const { login, senha, tipo } = payload;
-  const normalizedLogin = normalizeLogin(login);
-  const normalizedPassword = senha.trim();
+async function buildSession(params: {
+  token: string;
+  perfis: LoginResponse["perfis"];
+  previousSession?: Partial<AuthSession> | null;
+}) {
+  const { token, perfis, previousSession } = params;
 
-  if (!normalizedLogin || !normalizedPassword) {
+  setApiAuthToken(token);
+
+  const usuario = await api.get<AuthMeResponse>("/auth/me");
+  const perfilId = getPerfilId({
+    usuarioTipo: usuario.tipo,
+    perfis,
+    previousSession,
+  });
+
+  if (usuario.tipo === "responsavel") {
+    const perfil = await buscarResponsavelMe();
+
+    return {
+      token,
+      usuario,
+      perfis: {
+        ...perfis,
+        responsavelId: perfil.id,
+      },
+      perfil,
+      adolescenteSelecionado: previousSession?.adolescenteSelecionado ?? null,
+    } satisfies AuthSession;
+  }
+
+  if (!perfilId) {
+    throw new Error("Nao foi possivel identificar o perfil do adolescente.");
+  }
+
+  const perfil = await buscarAdolescentePorId(perfilId);
+
+  return {
+    token,
+    usuario,
+    perfis: {
+      ...perfis,
+      adolescenteId: perfil.id,
+    },
+    perfil,
+    adolescenteSelecionado: previousSession?.adolescenteSelecionado ?? null,
+  } satisfies AuthSession;
+}
+
+export async function signInRequest(payload: LoginPayload) {
+  const { login, senha } = payload;
+
+  if (!login.trim() || !senha.trim()) {
     throw new Error("Preencha login e senha.");
   }
 
-  if (tipo === "adolescente") {
-    const adolescenteAccount = mockAccounts.adolescente.find(
-      (candidate) => candidate.usuario.usuario.toLowerCase() === normalizedLogin,
-    );
+  const response = await api.post<LoginResponse>(
+    "/auth/login",
+    {
+      login: login.trim(),
+      senha: senha.trim(),
+    },
+    { skipUnauthorizedHandler: true },
+  );
 
-    if (isValidEmail(normalizedLogin) || isValidCpf(normalizedLogin)) {
-      throw new Error("Adolescente deve acessar apenas com usuario e senha.");
+  return buildSession({
+    token: response.token,
+    perfis: response.perfis,
+  });
+}
+
+export async function restoreSession(session: AuthSession) {
+  try {
+    return await buildSession({
+      token: session.token,
+      perfis: session.perfis,
+      previousSession: session,
+    });
+  } catch (error) {
+    if (isApiConnectionError(error)) {
+      setApiAuthToken(session.token);
+      return session;
     }
 
-    if (!adolescenteAccount) {
-      throw new Error("Usuario de adolescente nao encontrado.");
-    }
-
-    if (normalizedPassword !== adolescenteAccount.senha) {
-      throw new Error("Senha invalida.");
-    }
-
-    return {
-      token: `mock-token-${tipo}-${adolescenteAccount.perfil.id}`,
-      usuario: adolescenteAccount.usuario,
-      perfil: adolescenteAccount.perfil,
-    };
+    throw error;
   }
-
-  const responsavelAccount = mockAccounts.responsavel;
-  const cpf = normalizeCpf(normalizedLogin);
-  const email = normalizedLogin;
-  const matchesEmail = email === responsavelAccount.usuario.email?.toLowerCase();
-  const matchesCpf = cpf === responsavelAccount.cpf;
-
-  if (!matchesEmail && !matchesCpf) {
-    throw new Error("Responsavel deve entrar com email ou CPF validos.");
-  }
-
-  if (normalizedPassword !== responsavelAccount.senha) {
-    throw new Error("Senha invalida.");
-  }
-
-  return {
-    token: `mock-token-${tipo}`,
-    usuario: responsavelAccount.usuario,
-    perfil: responsavelAccount.perfil,
-  };
 }

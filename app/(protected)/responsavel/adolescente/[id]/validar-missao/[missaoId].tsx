@@ -1,12 +1,18 @@
-import { buscarMissaoParaValidacao } from "@/services/responsavel";
+import {
+  aprovarMissaoDoAdolescente,
+  buscarMissaoParaValidacao,
+  recusarMissaoDoAdolescente,
+} from "@/services/responsavel";
 import { validarMissaoStyles } from "@/styles/validar-missao";
 import type { MissaoValidacao } from "@/types/painel-financeiro";
 import { formatCurrency } from "@/utils/currency";
+import { formatDateTime } from "@/utils/date";
+import { getErrorMessage, getErrorTitle } from "@/utils/errors";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  // Alert,
+  Alert,
   Image,
   ScrollView,
   Text,
@@ -18,8 +24,6 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-
-// const RESPONSAVEL_ADOLESCENTE_ROUTE = "/responsavel/adolescente";
 
 function InfoCard({
   title,
@@ -78,15 +82,24 @@ export default function ValidarMissaoScreen() {
         return;
       }
 
-      const data = await buscarMissaoParaValidacao(
-        String(id),
-        String(missaoId),
-      );
+      try {
+        const data = await buscarMissaoParaValidacao(
+          String(id),
+          String(missaoId),
+        );
 
-      if (active) {
-        setMissao(data ?? null);
-        setFeedback(data?.feedbackResponsavel ?? "");
-        setLoading(false);
+        if (active) {
+          setMissao(data ?? null);
+          setFeedback(data?.feedbackResponsavel ?? "");
+        }
+      } catch (requestError) {
+        if (active) {
+          Alert.alert(getErrorTitle(requestError), getErrorMessage(requestError));
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
       }
     }
 
@@ -102,31 +115,32 @@ export default function ValidarMissaoScreen() {
       return;
     }
 
-    setSaving(true);
+    try {
+      setSaving(true);
 
-    // if (action === "aprovar") {
-    //   await aprovarMissaoDoAdolescente(String(id), String(missaoId), feedback);
-    // } else {
-    //   await recusarMissaoDoAdolescente(String(id), String(missaoId), feedback);
-    // }
+      if (action === "aprovar") {
+        await aprovarMissaoDoAdolescente(String(id), String(missaoId), feedback);
+      } else {
+        await recusarMissaoDoAdolescente();
+      }
 
-    setSaving(false);
-
-    // Alert.alert(
-    //   action === "aprovar" ? "Missao aprovada" : "Missao recusada",
-    //   action === "aprovar"
-    //     ? "O valor foi liberado para o saldo disponivel."
-    //     : "A missao voltou para o status pendente.",
-    //   [
-    //     {
-    //       text: "OK",
-    //       onPress: () =>
-    //         router.replace(
-    //           `${RESPONSAVEL_ADOLESCENTE_ROUTE}/${String(id)}` as any,
-    //         ),
-    //     },
-    //   ],
-    // );
+      Alert.alert(
+        action === "aprovar" ? "Missao aprovada" : "Missao recusada",
+        action === "aprovar"
+          ? "A missao foi validada com sucesso."
+          : "A API atual nao oferece endpoint de recusa.",
+        [
+          {
+            text: "OK",
+            onPress: () => router.replace(`/responsavel/adolescente/${String(id)}` as any),
+          },
+        ],
+      );
+    } catch (requestError) {
+      Alert.alert(getErrorTitle(requestError), getErrorMessage(requestError));
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (loading) {
@@ -141,7 +155,7 @@ export default function ValidarMissaoScreen() {
     return (
       <SafeAreaView style={validarMissaoStyles.loadingContainer}>
         <Text style={validarMissaoStyles.notFoundText}>
-          Missão não encontrada.
+          Missao nao encontrada.
         </Text>
       </SafeAreaView>
     );
@@ -160,9 +174,9 @@ export default function ValidarMissaoScreen() {
           <Feather name="arrow-left" size={22} color="#FFF" />
         </TouchableOpacity>
 
-        <Text style={validarMissaoStyles.headerTitle}>Validar Missão</Text>
+        <Text style={validarMissaoStyles.headerTitle}>Validar Missao</Text>
         <Text style={validarMissaoStyles.headerSubtitle}>
-          Aguardando sua aprovação
+          Aguardando sua aprovacao
         </Text>
       </View>
 
@@ -178,7 +192,7 @@ export default function ValidarMissaoScreen() {
           <View style={validarMissaoStyles.dateRow}>
             <Feather name="calendar" size={14} color="#667085" />
             <Text style={validarMissaoStyles.dateText}>
-              Concluida em: {missao.concluidaEm}
+              Concluida em: {formatDateTime(missao.concluidaEm)}
             </Text>
           </View>
         </View>
@@ -192,22 +206,22 @@ export default function ValidarMissaoScreen() {
           </Text>
         </View>
 
-        <InfoCard title="Descrição da Missão">
+        <InfoCard title="Descricao da Missao">
           <Text style={validarMissaoStyles.cardText}>{missao.descricao}</Text>
         </InfoCard>
 
         <InfoCard
-          title="Comentário do Adolescente"
+          title="Comentario do Adolescente"
           icon={<Feather name="message-square" size={16} color="#2563EB" />}
           highlighted
         >
           <Text style={validarMissaoStyles.cardText}>
-            {missao.comentarioAdolescente || "Nenhum comentário enviado."}
+            {missao.comentarioAdolescente || "Nenhum comentario enviado."}
           </Text>
         </InfoCard>
 
         <InfoCard
-          title="Evidências Anexadas"
+          title="Evidencias Anexadas"
           icon={
             <MaterialCommunityIcons
               name="image-outline"
@@ -217,25 +231,29 @@ export default function ValidarMissaoScreen() {
           }
         >
           <View style={validarMissaoStyles.evidenceGrid}>
-            {missao.evidencias.map((evidencia) => (
-              <View key={evidencia.id} style={validarMissaoStyles.evidenceCard}>
-                {evidencia.imagem ? (
-                  <Image
-                    source={evidencia.imagem}
-                    resizeMode="cover"
-                    style={validarMissaoStyles.evidenceImage}
-                  />
-                ) : (
-                  <View style={validarMissaoStyles.evidencePlaceholder}>
-                    <MaterialCommunityIcons
-                      name="image-off-outline"
-                      size={28}
-                      color="#98A2B3"
+            {missao.evidencias.length ? (
+              missao.evidencias.map((evidencia) => (
+                <View key={evidencia.id} style={validarMissaoStyles.evidenceCard}>
+                  {evidencia.imagem ? (
+                    <Image
+                      source={evidencia.imagem}
+                      resizeMode="cover"
+                      style={validarMissaoStyles.evidenceImage}
                     />
-                  </View>
-                )}
-              </View>
-            ))}
+                  ) : (
+                    <View style={validarMissaoStyles.evidencePlaceholder}>
+                      <MaterialCommunityIcons
+                        name="image-off-outline"
+                        size={28}
+                        color="#98A2B3"
+                      />
+                    </View>
+                  )}
+                </View>
+              ))
+            ) : (
+              <Text style={validarMissaoStyles.cardText}>Nenhuma evidencia enviada.</Text>
+            )}
           </View>
         </InfoCard>
 
@@ -243,7 +261,7 @@ export default function ValidarMissaoScreen() {
           <TextInput
             value={feedback}
             onChangeText={setFeedback}
-            placeholder="Deixe um comentário para o adolescente..."
+            placeholder="Deixe um comentario para o adolescente..."
             placeholderTextColor="#98A2B3"
             multiline
             textAlignVertical="top"
@@ -275,7 +293,9 @@ export default function ValidarMissaoScreen() {
             ]}
           >
             <Feather name="check-circle" size={18} color="#FFF" />
-            <Text style={validarMissaoStyles.actionText}>Aprovar</Text>
+            <Text style={validarMissaoStyles.actionText}>
+              {saving ? "Salvando..." : "Aprovar"}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

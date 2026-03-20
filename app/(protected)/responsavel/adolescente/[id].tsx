@@ -7,12 +7,20 @@ import type {
   MissaoAtiva,
 } from "@/types/painel-financeiro";
 import { formatCurrency } from "@/utils/currency";
+import { formatDate } from "@/utils/date";
+import { getErrorMessage } from "@/utils/errors";
 import { getInitials } from "@/utils/initials";
 import { Feather } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -57,7 +65,7 @@ function ExtratoRow({ item }: { item: ExtratoItem }) {
 
       <View style={stylePainel.rowContent}>
         <Text style={stylePainel.rowTitle}>{item.titulo}</Text>
-        <Text style={stylePainel.rowSubtitle}>{item.data}</Text>
+        <Text style={stylePainel.rowSubtitle}>{formatDate(item.data)}</Text>
       </View>
 
       <Text
@@ -83,7 +91,7 @@ function MissaoRow({
   const precisaValidar = item.status === "aguardando_validacao";
   const statusColor = precisaValidar ? "#F97316" : "#6B7280";
   const statusLabel = precisaValidar
-    ? "Aguardando validação"
+    ? "Aguardando validacao"
     : item.status === "em_andamento"
       ? "Em andamento"
       : item.status === "aprovada"
@@ -148,6 +156,7 @@ export default function AdolescentePainelFinanceiroScreen() {
   const [painelFinanceiro, setPainelFinanceiro] =
     useState<AdolescentePainelFinanceiro | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const carregarPainel = useCallback(async () => {
     if (!id) {
@@ -156,10 +165,17 @@ export default function AdolescentePainelFinanceiroScreen() {
       return;
     }
 
-    setLoading(true);
-    const data = await buscarPainelFinanceiroDoAdolescente(String(id));
-    setPainelFinanceiro(data ?? null);
-    setLoading(false);
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await buscarPainelFinanceiroDoAdolescente(String(id));
+      setPainelFinanceiro(data ?? null);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+      setPainelFinanceiro(null);
+    } finally {
+      setLoading(false);
+    }
   }, [id]);
 
   useFocusEffect(
@@ -183,7 +199,21 @@ export default function AdolescentePainelFinanceiroScreen() {
   if (loading) {
     return (
       <SafeAreaView style={stylePainel.loadingContainer} edges={["bottom"]}>
-        <Text>Carregando...</Text>
+        <ActivityIndicator size="large" color="#2F6BFF" />
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={stylePainel.loadingContainer} edges={["bottom"]}>
+        <Text style={stylePainel.emptyTitle}>{error}</Text>
+        <TouchableOpacity
+          style={stylePainel.emptyButton}
+          onPress={() => void carregarPainel()}
+        >
+          <Text style={stylePainel.emptyButtonText}>Tentar novamente</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }
@@ -196,7 +226,7 @@ export default function AdolescentePainelFinanceiroScreen() {
           style={stylePainel.emptyButton}
           onPress={() => router.replace(RESPONSAVEL_SELECT_ROUTE as any)}
         >
-          <Text style={stylePainel.emptyButtonText}>Voltar para selecao</Text>
+          <Text style={stylePainel.emptyButtonText}>← para selecao</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -242,6 +272,7 @@ export default function AdolescentePainelFinanceiroScreen() {
           stylePainel.scrollContent,
           { paddingBottom: insets.bottom + 24 },
         ]}
+        refreshControl={undefined}
       >
         <View style={stylePainel.balanceCard}>
           <Text style={stylePainel.balanceLabel}>Saldo Total</Text>
@@ -274,7 +305,7 @@ export default function AdolescentePainelFinanceiroScreen() {
           />
           <ActionCard
             icon={<Feather name="target" size={22} color="#A855F7" />}
-            label="Criar Missão"
+            label="Criar Missao"
             onPress={handleOpenCriarMissao}
           />
         </View>
@@ -285,21 +316,33 @@ export default function AdolescentePainelFinanceiroScreen() {
             <Feather name="trending-up" size={16} color="#9CA3AF" />
           </View>
 
-          {painelFinanceiro.extratoRecente.map((item) => (
-            <ExtratoRow key={item.id} item={item} />
-          ))}
+          {painelFinanceiro.extratoRecente.length ? (
+            painelFinanceiro.extratoRecente.map((item) => (
+              <ExtratoRow key={item.id} item={item} />
+            ))
+          ) : (
+            <Text style={stylePainel.rowSubtitle}>
+              Nenhuma movimentacao encontrada.
+            </Text>
+          )}
         </View>
 
         <View style={stylePainel.sectionCard}>
-          <Text style={stylePainel.sectionTitle}>Missões Ativas</Text>
+          <Text style={stylePainel.sectionTitle}>Missoes Ativas</Text>
 
-          {painelFinanceiro.missoesAtivas.map((item) => (
-            <MissaoRow
-              key={item.id}
-              adolescenteId={painelFinanceiro.adolescenteId}
-              item={item}
-            />
-          ))}
+          {painelFinanceiro.missoesAtivas.length ? (
+            painelFinanceiro.missoesAtivas.map((item) => (
+              <MissaoRow
+                key={item.id}
+                adolescenteId={painelFinanceiro.adolescenteId}
+                item={item}
+              />
+            ))
+          ) : (
+            <Text style={stylePainel.rowSubtitle}>
+              Nenhuma missao atribuida.
+            </Text>
+          )}
         </View>
       </ScrollView>
     </View>

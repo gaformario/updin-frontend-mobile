@@ -1,10 +1,18 @@
-import { buscarPainelFinanceiroDoAdolescente } from "@/services/responsavel";
+import { useAuth } from "@/features/auth/context/AuthContext";
+import {
+  buscarPainelFinanceiroDoAdolescente,
+  criarMissaoParaAdolescente,
+} from "@/services/responsavel";
 import { criarMissaoStyles } from "@/styles/criar-missao";
 import { formatCurrency } from "@/utils/currency";
+import { parseInputDecimal } from "@/utils/decimal";
+import { getErrorMessage, getErrorTitle } from "@/utils/errors";
 import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   ScrollView,
   Text,
   TextInput,
@@ -15,17 +23,37 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type TipoValidacao = "manual" | "automatica";
 
+function parseDateInput(value: string) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const [day, month, year] = trimmed.split("/");
+
+  if (!day || !month || !year) {
+    return undefined;
+  }
+
+  return new Date(`${year}-${month}-${day}T00:00:00.000Z`).toISOString();
+}
+
 export default function CriarMissaoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { session } = useAuth();
   const insets = useSafeAreaInsets();
   const [nome, setNome] = useState("");
-  const [saldoVariavel, setSaldoVariavel] = useState(50);
+  const [saldoVariavel, setSaldoVariavel] = useState(0);
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [recompensa, setRecompensa] = useState("");
   const [prazo, setPrazo] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [tipoValidacao, setTipoValidacao] = useState<TipoValidacao>("manual");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -35,13 +63,25 @@ export default function CriarMissaoScreen() {
         return;
       }
 
-      const painelFinanceiro = await buscarPainelFinanceiroDoAdolescente(
-        String(id),
-      );
+      try {
+        setLoading(true);
+        setError(null);
+        const painelFinanceiro = await buscarPainelFinanceiroDoAdolescente(
+          String(id),
+        );
 
-      if (active && painelFinanceiro) {
-        setNome(painelFinanceiro.nome);
-        setSaldoVariavel(painelFinanceiro.variavel);
+        if (active && painelFinanceiro) {
+          setNome(painelFinanceiro.nome);
+          setSaldoVariavel(painelFinanceiro.variavel);
+        }
+      } catch (requestError) {
+        if (active) {
+          setError(getErrorMessage(requestError));
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
       }
     }
 
@@ -56,16 +96,79 @@ export default function CriarMissaoScreen() {
     router.replace(`/responsavel/adolescente/${String(id)}` as any);
   }
 
-  function handleCreate() {}
+  async function handleCreate() {
+    if (!id || saving) {
+      return;
+    }
+
+    const responsavelId = session?.perfis.responsavelId;
+
+    if (!responsavelId) {
+      Alert.alert("Erro", "Nao foi possivel identificar o responsavel logado.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await criarMissaoParaAdolescente({
+        responsavelId,
+        adolescenteId: String(id),
+        titulo,
+        descricao: descricao || undefined,
+        recompensaFinanceira: parseInputDecimal(recompensa),
+        dataLimite: parseDateInput(prazo),
+        observacao: observacoes || undefined,
+      });
+
+      Alert.alert("Sucesso", "Missao criada e atribuida com sucesso.", [
+        {
+          text: "OK",
+          onPress: handleClose,
+        },
+      ]);
+    } catch (requestError) {
+      Alert.alert(getErrorTitle(requestError), getErrorMessage(requestError));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <View
+        style={[
+          criarMissaoStyles.screen,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
+        <ActivityIndicator size="large" color="#A855F7" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View
+        style={[
+          criarMissaoStyles.screen,
+          { justifyContent: "center", alignItems: "center", padding: 24 },
+        ]}
+      >
+        <Text style={criarMissaoStyles.headerTitle}>{error}</Text>
+        <TouchableOpacity
+          style={criarMissaoStyles.createButton}
+          onPress={handleClose}
+        >
+          <Text style={criarMissaoStyles.createText}>←</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={criarMissaoStyles.screen}>
       <View style={[criarMissaoStyles.header, { paddingTop: insets.top + 10 }]}>
-        {/* <TouchableOpacity onPress={handleClose} style={criarMissaoStyles.backButton}>
-          <Feather name="arrow-left" size={20} color="#FFF" />
-        </TouchableOpacity> */}
-
-        <Text style={criarMissaoStyles.headerTitle}>Criar Nova Missão</Text>
+        <Text style={criarMissaoStyles.headerTitle}>Criar Nova Missao</Text>
         <Text style={criarMissaoStyles.headerSubtitle}>{nome}</Text>
       </View>
 
@@ -78,18 +181,18 @@ export default function CriarMissaoScreen() {
       >
         <View style={criarMissaoStyles.highlightCard}>
           <Text style={criarMissaoStyles.highlightLabel}>
-            Saldo Variável Disponível
+            Saldo Variavel Disponivel
           </Text>
           <Text style={criarMissaoStyles.highlightValue}>
             {formatCurrency(saldoVariavel)}
           </Text>
           <Text style={criarMissaoStyles.highlightCaption}>
-            Limite para novas missões
+            Limite para novas missoes
           </Text>
         </View>
 
         <View style={criarMissaoStyles.card}>
-          <Text style={criarMissaoStyles.label}>Titulo da Missão</Text>
+          <Text style={criarMissaoStyles.label}>Titulo da Missao</Text>
           <View style={criarMissaoStyles.inputRow}>
             <Feather name="target" size={16} color="#98A2B3" />
             <TextInput
@@ -103,7 +206,7 @@ export default function CriarMissaoScreen() {
         </View>
 
         <View style={criarMissaoStyles.card}>
-          <Text style={criarMissaoStyles.label}>Descrição Detalhada</Text>
+          <Text style={criarMissaoStyles.label}>Descricao Detalhada</Text>
           <TextInput
             value={descricao}
             onChangeText={setDescricao}
@@ -118,11 +221,11 @@ export default function CriarMissaoScreen() {
         <View style={criarMissaoStyles.card}>
           <Text style={criarMissaoStyles.label}>Valor da Recompensa</Text>
           <View style={criarMissaoStyles.inputRow}>
-            <Text style={criarMissaoStyles.moneyPrefix}>$</Text>
+            <Text style={criarMissaoStyles.moneyPrefix}>R$</Text>
             <TextInput
               value={recompensa}
               onChangeText={setRecompensa}
-              placeholder="0.00"
+              placeholder="0,00"
               placeholderTextColor="#98A2B3"
               keyboardType="numeric"
               style={criarMissaoStyles.input}
@@ -145,11 +248,11 @@ export default function CriarMissaoScreen() {
         </View>
 
         <View style={criarMissaoStyles.card}>
-          <Text style={criarMissaoStyles.label}>Observações (Opcional)</Text>
+          <Text style={criarMissaoStyles.label}>Observacoes (Opcional)</Text>
           <TextInput
             value={observacoes}
             onChangeText={setObservacoes}
-            placeholder="Informações adicionais..."
+            placeholder="Informacoes adicionais..."
             placeholderTextColor="#98A2B3"
             style={criarMissaoStyles.textArea}
             multiline
@@ -158,7 +261,7 @@ export default function CriarMissaoScreen() {
         </View>
 
         <View style={criarMissaoStyles.card}>
-          <Text style={criarMissaoStyles.label}>Tipo de Validação</Text>
+          <Text style={criarMissaoStyles.label}>Tipo de Validacao</Text>
           <View style={criarMissaoStyles.segmentRow}>
             <TouchableOpacity
               style={[
@@ -175,7 +278,7 @@ export default function CriarMissaoScreen() {
                     criarMissaoStyles.segmentTextActive,
                 ]}
               >
-                Aprovação Manual
+                Aprovacao Manual
               </Text>
             </TouchableOpacity>
 
@@ -194,7 +297,7 @@ export default function CriarMissaoScreen() {
                     criarMissaoStyles.segmentTextActive,
                 ]}
               >
-                Validação Automática
+                Validacao Automatica
               </Text>
             </TouchableOpacity>
           </View>
@@ -204,15 +307,19 @@ export default function CriarMissaoScreen() {
           <TouchableOpacity
             style={criarMissaoStyles.cancelButton}
             onPress={handleClose}
+            disabled={saving}
           >
             <Text style={criarMissaoStyles.cancelText}>Cancelar</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={criarMissaoStyles.createButton}
-            onPress={handleCreate}
+            onPress={() => void handleCreate()}
+            disabled={saving}
           >
-            <Text style={criarMissaoStyles.createText}>Criar Missão</Text>
+            <Text style={criarMissaoStyles.createText}>
+              {saving ? "Criando..." : "Criar Missao"}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

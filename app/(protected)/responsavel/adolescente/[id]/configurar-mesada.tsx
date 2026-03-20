@@ -1,9 +1,16 @@
-import { buscarPainelFinanceiroDoAdolescente } from "@/services/responsavel";
+import {
+  buscarPainelFinanceiroDoAdolescente,
+  configurarMesadaDoAdolescente,
+} from "@/services/responsavel";
 import { configMesadaStyles } from "@/styles/configurar-mesada";
 import { formatCurrency } from "@/utils/currency";
+import { parseInputDecimal, toCurrencyInput } from "@/utils/decimal";
+import { getErrorMessage, getErrorTitle } from "@/utils/errors";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   ScrollView,
   Switch,
   Text,
@@ -15,6 +22,18 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Periodicidade = "Semanal" | "Quinzenal" | "Mensal";
 
+function mapPeriodicidade(periodicidade?: string | null): Periodicidade {
+  if (periodicidade === "quinzenal") {
+    return "Quinzenal";
+  }
+
+  if (periodicidade === "mensal") {
+    return "Mensal";
+  }
+
+  return "Semanal";
+}
+
 export default function ConfigurarMesadaScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
@@ -22,6 +41,9 @@ export default function ConfigurarMesadaScreen() {
   const [valor, setValor] = useState("");
   const [periodicidade, setPeriodicidade] = useState<Periodicidade>("Semanal");
   const [ativo, setAtivo] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -31,13 +53,29 @@ export default function ConfigurarMesadaScreen() {
         return;
       }
 
-      const painelFinanceiro = await buscarPainelFinanceiroDoAdolescente(
-        String(id),
-      );
+      try {
+        setLoading(true);
+        setError(null);
+        const painelFinanceiro = await buscarPainelFinanceiroDoAdolescente(
+          String(id),
+        );
 
-      if (active && painelFinanceiro) {
-        setNome(painelFinanceiro.nome);
-        setValor(painelFinanceiro.saldoTotal.toFixed(2).replace(".", ","));
+        if (active && painelFinanceiro) {
+          setNome(painelFinanceiro.nome);
+          setValor(toCurrencyInput(painelFinanceiro.mesadaValor));
+          setPeriodicidade(
+            mapPeriodicidade(painelFinanceiro.mesadaPeriodicidade),
+          );
+          setAtivo(painelFinanceiro.mesadaAtiva);
+        }
+      } catch (requestError) {
+        if (active) {
+          setError(getErrorMessage(requestError));
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
       }
     }
 
@@ -49,25 +87,79 @@ export default function ConfigurarMesadaScreen() {
   }, [id]);
 
   const valorNumerico = useMemo(() => {
-    const parsed = Number(valor.replace(",", "."));
-    return Number.isFinite(parsed) ? parsed : 0;
+    return parseInputDecimal(valor);
   }, [valor]);
 
   function handleClose() {
     router.replace(`/responsavel/adolescente/${String(id)}` as any);
   }
 
-  function handleConfirm() {}
+  async function handleConfirm() {
+    if (!id || saving) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await configurarMesadaDoAdolescente({
+        adolescenteId: String(id),
+        valor: valorNumerico,
+        periodicidade,
+        ativa: ativo,
+      });
+
+      Alert.alert("Sucesso", "Mesada atualizada com sucesso.", [
+        {
+          text: "OK",
+          onPress: handleClose,
+        },
+      ]);
+    } catch (requestError) {
+      Alert.alert(getErrorTitle(requestError), getErrorMessage(requestError));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <View
+        style={[
+          configMesadaStyles.screen,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
+        <ActivityIndicator size="large" color="#2F6BFF" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View
+        style={[
+          configMesadaStyles.screen,
+          { justifyContent: "center", alignItems: "center", padding: 24 },
+        ]}
+      >
+        <Text style={configMesadaStyles.headerTitle}>{error}</Text>
+        <TouchableOpacity
+          style={configMesadaStyles.confirmButton}
+          onPress={() =>
+            router.replace(`/responsavel/adolescente/${String(id)}` as any)
+          }
+        >
+          <Text style={configMesadaStyles.confirmText}>←</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={configMesadaStyles.screen}>
       <View
         style={[configMesadaStyles.header, { paddingTop: insets.top + 10 }]}
       >
-        {/* <TouchableOpacity onPress={handleClose} style={configMesadaStyles.backButton}>
-          <Feather name="arrow-left" size={20} color="#FFF" />
-        </TouchableOpacity> */}
-
         <Text style={configMesadaStyles.headerTitle}>Configurar Mesada</Text>
         <Text style={configMesadaStyles.headerSubtitle}>{nome}</Text>
       </View>
@@ -96,7 +188,7 @@ export default function ConfigurarMesadaScreen() {
         </View>
 
         <View style={configMesadaStyles.card}>
-          <Text style={configMesadaStyles.label}>Divisão Automática</Text>
+          <Text style={configMesadaStyles.label}>Divisao Automatica</Text>
 
           <View
             style={[
@@ -113,7 +205,7 @@ export default function ConfigurarMesadaScreen() {
               <Text
                 style={[configMesadaStyles.splitSubtitle, { color: "#15803D" }]}
               >
-                Valor garantido toda semana
+                Valor garantido em cada ciclo
               </Text>
             </View>
             <Text style={[configMesadaStyles.splitValue, { color: "#15803D" }]}>
@@ -136,7 +228,7 @@ export default function ConfigurarMesadaScreen() {
               <Text
                 style={[configMesadaStyles.splitSubtitle, { color: "#EA580C" }]}
               >
-                Para missões e recompensas
+                Para missoes e recompensas
               </Text>
             </View>
             <Text style={[configMesadaStyles.splitValue, { color: "#EA580C" }]}>
@@ -176,7 +268,7 @@ export default function ConfigurarMesadaScreen() {
         <View style={[configMesadaStyles.card, configMesadaStyles.switchCard]}>
           <View>
             <Text style={configMesadaStyles.labelNoMargin}>
-              Ativar mesada automática
+              Ativar mesada automatica
             </Text>
             <Text style={configMesadaStyles.helperText}>
               O valor sera creditado automaticamente
@@ -195,15 +287,19 @@ export default function ConfigurarMesadaScreen() {
           <TouchableOpacity
             style={configMesadaStyles.cancelButton}
             onPress={handleClose}
+            disabled={saving}
           >
             <Text style={configMesadaStyles.cancelText}>Cancelar</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={configMesadaStyles.confirmButton}
-            onPress={handleConfirm}
+            onPress={() => void handleConfirm()}
+            disabled={saving}
           >
-            <Text style={configMesadaStyles.confirmText}>Confirmar</Text>
+            <Text style={configMesadaStyles.confirmText}>
+              {saving ? "Salvando..." : "Confirmar"}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

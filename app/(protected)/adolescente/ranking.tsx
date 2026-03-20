@@ -1,23 +1,19 @@
+import { useAuth } from "@/features/auth/context/AuthContext";
+import { buscarRankingParaTela } from "@/services/ranking";
 import { adolescenteRankingStyles as styles } from "@/styles/adolescente/ranking";
+import type { RankingListaItem, RankingPeriod } from "@/types/view-models";
+import { getErrorMessage } from "@/utils/errors";
+import { getInitials } from "@/utils/initials";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { getInitials } from "@/utils/initials";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
-import { Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-
-type RankingPeriod = "semanal" | "mensal" | "geral";
-
-type RankingEntry = {
-  id: string;
-  nome: string;
-  pontos: number;
-  posicao: number;
-  isCurrentUser?: boolean;
-  movimento?: "up" | "same" | "down";
-};
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 const filters: { key: RankingPeriod; label: string }[] = [
   { key: "semanal", label: "Semanal" },
@@ -25,60 +21,7 @@ const filters: { key: RankingPeriod; label: string }[] = [
   { key: "geral", label: "Geral" },
 ];
 
-const rankingByPeriod: Record<RankingPeriod, RankingEntry[]> = {
-  semanal: [
-    { id: "1", nome: "Ana Silva", pontos: 1450, posicao: 1, movimento: "up" },
-    { id: "2", nome: "Pedro Santos", pontos: 1320, posicao: 2, movimento: "same" },
-    {
-      id: "3",
-      nome: "Lucas Silva",
-      pontos: 1180,
-      posicao: 3,
-      isCurrentUser: true,
-      movimento: "up",
-    },
-    { id: "4", nome: "Maria Costa", pontos: 1050, posicao: 4, movimento: "down" },
-    { id: "5", nome: "João Oliveira", pontos: 990, posicao: 5, movimento: "up" },
-  ],
-  mensal: [
-    { id: "1", nome: "Ana Silva", pontos: 4860, posicao: 1, movimento: "up" },
-    {
-      id: "3",
-      nome: "Lucas Silva",
-      pontos: 4410,
-      posicao: 2,
-      isCurrentUser: true,
-      movimento: "up",
-    },
-    { id: "2", nome: "Pedro Santos", pontos: 4320, posicao: 3, movimento: "down" },
-    { id: "4", nome: "Maria Costa", pontos: 3980, posicao: 4, movimento: "same" },
-    { id: "5", nome: "João Oliveira", pontos: 3720, posicao: 5, movimento: "up" },
-  ],
-  geral: [
-    { id: "2", nome: "Pedro Santos", pontos: 9730, posicao: 1, movimento: "same" },
-    { id: "1", nome: "Ana Silva", pontos: 9510, posicao: 2, movimento: "up" },
-    {
-      id: "3",
-      nome: "Lucas Silva",
-      pontos: 9040,
-      posicao: 3,
-      isCurrentUser: true,
-      movimento: "up",
-    },
-    { id: "5", nome: "João Oliveira", pontos: 8740, posicao: 4, movimento: "down" },
-    { id: "4", nome: "Maria Costa", pontos: 8650, posicao: 5, movimento: "same" },
-  ],
-};
-
-function TrendIcon({ movement }: { movement?: RankingEntry["movimento"] }) {
-  if (movement === "up") {
-    return <Feather name="trending-up" size={12} color="#22C55E" />;
-  }
-
-  if (movement === "down") {
-    return <Feather name="trending-down" size={12} color="#3B82F6" />;
-  }
-
+function TrendIcon() {
   return <Text style={styles.trendNeutral}>-</Text>;
 }
 
@@ -86,7 +29,7 @@ function PodiumCard({
   item,
   variant,
 }: {
-  item: RankingEntry;
+  item: RankingListaItem;
   variant: "first" | "second" | "third";
 }) {
   const config = {
@@ -94,18 +37,18 @@ function PodiumCard({
       avatarStyle: styles.firstAvatar,
       baseStyle: styles.firstBase,
       icon: "trophy-outline" as const,
-      label: "1º",
+      label: "1o",
     },
     second: {
       avatarStyle: styles.secondAvatar,
       baseStyle: styles.secondBase,
-      label: "2º",
+      label: "2o",
     },
     third: {
       avatarStyle: styles.thirdAvatar,
       baseStyle: styles.thirdBase,
       icon: "medal-outline" as const,
-      label: "3º",
+      label: "3o",
     },
   }[variant];
 
@@ -129,22 +72,105 @@ function PodiumCard({
 }
 
 export default function RankingScreen() {
+  const { session } = useAuth();
   const insets = useSafeAreaInsets();
   const [period, setPeriod] = useState<RankingPeriod>("semanal");
+  const [ranking, setRanking] = useState<RankingListaItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const ranking = rankingByPeriod[period];
+  const adolescenteId = session?.perfis.adolescenteId;
+  const responsavelId =
+    session?.usuario.tipo === "adolescente" &&
+    session?.perfil &&
+    "responsavelId" in session.perfil
+      ? session.perfil.responsavelId
+      : null;
+
+  useEffect(() => {
+    let active = true;
+
+    async function carregar() {
+      if (!adolescenteId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await buscarRankingParaTela({
+          periodo: period,
+          adolescenteId,
+          responsavelId,
+        });
+
+        if (active) {
+          setRanking(data);
+        }
+      } catch (requestError) {
+        if (active) {
+          setError(getErrorMessage(requestError));
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void carregar();
+
+    return () => {
+      active = false;
+    };
+  }, [adolescenteId, period, responsavelId]);
+
   const currentUser = useMemo(
     () => ranking.find((entry) => entry.isCurrentUser) ?? ranking[0],
     [ranking],
   );
   const topThree = ranking.slice(0, 3);
 
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={[styles.content, { flex: 1, justifyContent: "center" }]}>
+          <ActivityIndicator size="large" color="#FF6A00" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={[styles.content, { flex: 1, justifyContent: "center" }]}>
+          <Text style={styles.heroTitle}>{error}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={[styles.content, { flex: 1, justifyContent: "center" }]}>
+          <Text style={styles.heroTitle}>Nenhum ranking disponivel.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.screen} edges={[]}>
       <Animated.ScrollView
         entering={FadeIn.duration(180)}
         style={styles.scroll}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: insets.bottom + 24 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <LinearGradient
@@ -162,13 +188,22 @@ export default function RankingScreen() {
           </TouchableOpacity>
 
           <View style={styles.heroTitleRow}>
-            <MaterialCommunityIcons name="trophy-outline" size={22} color="#FFF" />
+            <MaterialCommunityIcons
+              name="trophy-outline"
+              size={22}
+              color="#FFF"
+            />
             <Text style={styles.heroTitle}>Ranking</Text>
           </View>
-          <Text style={styles.heroSubtitle}>Compare seu desempenho com amigos</Text>
+          <Text style={styles.heroSubtitle}>
+            Compare seu desempenho com a galera
+          </Text>
         </LinearGradient>
 
-        <Animated.View entering={FadeInDown.duration(220).delay(40)} style={styles.filterWrap}>
+        <Animated.View
+          entering={FadeInDown.duration(220).delay(40)}
+          style={styles.filterWrap}
+        >
           <View style={styles.filterRow}>
             {filters.map((filter) => {
               const active = filter.key === period;
@@ -178,10 +213,16 @@ export default function RankingScreen() {
                   key={filter.key}
                   activeOpacity={0.85}
                   onPress={() => setPeriod(filter.key)}
-                  style={[styles.filterButton, active ? styles.filterButtonActive : null]}
+                  style={[
+                    styles.filterButton,
+                    active ? styles.filterButtonActive : null,
+                  ]}
                 >
                   <Text
-                    style={[styles.filterLabel, active ? styles.filterLabelActive : null]}
+                    style={[
+                      styles.filterLabel,
+                      active ? styles.filterLabelActive : null,
+                    ]}
                   >
                     {filter.label}
                   </Text>
@@ -203,13 +244,17 @@ export default function RankingScreen() {
             <View style={styles.currentRow}>
               <View style={styles.currentUserWrap}>
                 <View style={styles.currentAvatar}>
-                  <Text style={styles.avatarEmoji}>{getInitials(currentUser.nome)}</Text>
+                  <Text style={styles.avatarEmoji}>
+                    {getInitials(currentUser.nome)}
+                  </Text>
                 </View>
                 <View>
                   <Text style={styles.currentName}>{currentUser.nome}</Text>
                   <View style={styles.currentMetaRow}>
-                    <Text style={styles.currentRank}>#{currentUser.posicao}</Text>
-                    <TrendIcon movement={currentUser.movimento} />
+                    <Text style={styles.currentRank}>
+                      #{currentUser.posicao}
+                    </Text>
+                    <TrendIcon />
                   </View>
                 </View>
               </View>
@@ -222,19 +267,37 @@ export default function RankingScreen() {
           </LinearGradient>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.duration(220).delay(100)} style={styles.card}>
+        <Animated.View
+          entering={FadeInDown.duration(220).delay(100)}
+          style={styles.card}
+        >
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>🏆 Top 3</Text>
           </View>
 
           <View style={styles.podiumRow}>
-            {topThree[1] ? <PodiumCard item={topThree[1]} variant="second" /> : <View />}
-            {topThree[0] ? <PodiumCard item={topThree[0]} variant="first" /> : <View />}
-            {topThree[2] ? <PodiumCard item={topThree[2]} variant="third" /> : <View />}
+            {topThree[1] ? (
+              <PodiumCard item={topThree[1]} variant="second" />
+            ) : (
+              <View />
+            )}
+            {topThree[0] ? (
+              <PodiumCard item={topThree[0]} variant="first" />
+            ) : (
+              <View />
+            )}
+            {topThree[2] ? (
+              <PodiumCard item={topThree[2]} variant="third" />
+            ) : (
+              <View />
+            )}
           </View>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.duration(220).delay(130)} style={styles.card}>
+        <Animated.View
+          entering={FadeInDown.duration(220).delay(130)}
+          style={styles.card}
+        >
           <Text style={styles.listTitle}>Classificação Completa</Text>
 
           <View style={styles.fullList}>
@@ -259,10 +322,18 @@ export default function RankingScreen() {
                       ]}
                     >
                       {entry.posicao === 2 ? (
-                        <Ionicons name="medal-outline" size={18} color="#667085" />
+                        <Ionicons
+                          name="medal-outline"
+                          size={18}
+                          color="#667085"
+                        />
                       ) : (
                         <MaterialCommunityIcons
-                          name={entry.posicao === 1 ? "trophy-outline" : "medal-outline"}
+                          name={
+                            entry.posicao === 1
+                              ? "trophy-outline"
+                              : "medal-outline"
+                          }
                           size={18}
                           color={entry.posicao === 1 ? "#B7791F" : "#C26A2D"}
                         />
@@ -270,12 +341,16 @@ export default function RankingScreen() {
                     </View>
                   ) : (
                     <View style={styles.rankNumberBubble}>
-                      <Text style={styles.rankNumberText}>#{entry.posicao}</Text>
+                      <Text style={styles.rankNumberText}>
+                        #{entry.posicao}
+                      </Text>
                     </View>
                   )}
 
                   <View style={styles.inlineAvatar}>
-                    <Text style={styles.inlineAvatarEmoji}>{getInitials(entry.nome)}</Text>
+                    <Text style={styles.inlineAvatarEmoji}>
+                      {getInitials(entry.nome)}
+                    </Text>
                   </View>
 
                   <View>
@@ -283,11 +358,13 @@ export default function RankingScreen() {
                       {entry.nome}
                       {entry.isCurrentUser ? " (Você)" : ""}
                     </Text>
-                    <Text style={styles.listPoints}>{entry.pontos} pontos XP</Text>
+                    <Text style={styles.listPoints}>
+                      {entry.pontos} pontos XP
+                    </Text>
                   </View>
                 </View>
 
-                <TrendIcon movement={entry.movimento} />
+                <TrendIcon />
               </View>
             ))}
           </View>

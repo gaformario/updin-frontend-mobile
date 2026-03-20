@@ -1,25 +1,42 @@
 import { useAuth } from "@/features/auth/context/AuthContext";
 import {
-  mockExtratoCompletoPorAdolescenteId,
-  mockPainelFinanceiroPorAdolescenteId,
-  type ExtratoCategoria,
-  type ExtratoHistoricoItem,
-} from "@/services/mock-painel-financeiro-adolescente";
+  buscarPainelFinanceiroDoAdolescente,
+  listarExtratoDoAdolescente,
+} from "@/services/adolescente";
 import { adolescenteExtratoStyles as stylePainel } from "@/styles/adolescente/extrato";
+import type { ExtratoItem } from "@/types/painel-financeiro";
 import { formatCurrency } from "@/utils/currency";
+import { formatDate, formatMonthYear } from "@/utils/date";
+import { getErrorMessage } from "@/utils/errors";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback, useMemo, useState } from "react";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
-import { Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+
+type ExtratoCategoria = "mesada" | "missao" | "outro";
+type ExtratoHistoricoItem = ExtratoItem & { categoria: ExtratoCategoria };
 
 const filtros: { key: "tudo" | ExtratoCategoria; label: string }[] = [
   { key: "tudo", label: "Tudo" },
   { key: "mesada", label: "Mesada" },
-  { key: "missao", label: "Missões" },
+  { key: "missao", label: "Missoes" },
 ];
+
+function getCategoria(item: ExtratoItem): ExtratoCategoria {
+  if (item.titulo.toLowerCase().includes("mesada")) {
+    return "mesada";
+  }
+
+  if (item.titulo.toLowerCase().includes("miss")) {
+    return "missao";
+  }
+
+  return "outro";
+}
 
 function getCategoriaMeta(categoria: ExtratoCategoria) {
   if (categoria === "mesada") {
@@ -31,11 +48,20 @@ function getCategoriaMeta(categoria: ExtratoCategoria) {
     };
   }
 
+  if (categoria === "missao") {
+    return {
+      label: "Missao",
+      icon: "target" as const,
+      iconColor: "#A855F7",
+      iconBackground: "#F3E8FF",
+    };
+  }
+
   return {
-    label: "Missão",
-    icon: "target" as const,
-    iconColor: "#A855F7",
-    iconBackground: "#F3E8FF",
+    label: "Movimentacao",
+    icon: "credit-card" as const,
+    iconColor: "#16A34A",
+    iconBackground: "#DCFCE7",
   };
 }
 
@@ -55,12 +81,13 @@ function ExtratoItemCard({ item }: { item: ExtratoHistoricoItem }) {
 
       <View style={stylePainel.statementItemContent}>
         <Text style={stylePainel.statementItemTitle}>{item.titulo}</Text>
-        <Text style={stylePainel.statementItemDate}>{item.data}</Text>
+        <Text style={stylePainel.statementItemDate}>{formatDate(item.data)}</Text>
       </View>
 
       <View style={stylePainel.statementItemMeta}>
         <Text style={stylePainel.statementItemValue}>
-          +{formatCurrency(item.valor)}
+          {item.tipo === "credito" ? "+" : "-"}
+          {formatCurrency(item.valor)}
         </Text>
         <Text style={stylePainel.statementItemCategory}>{categoria.label}</Text>
       </View>
@@ -71,20 +98,43 @@ function ExtratoItemCard({ item }: { item: ExtratoHistoricoItem }) {
 export default function ExtratoScreen() {
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
+  const adolescenteId = session?.perfis.adolescenteId;
   const [filtroAtivo, setFiltroAtivo] = useState<"tudo" | ExtratoCategoria>("tudo");
+  const [saldoTotal, setSaldoTotal] = useState(0);
+  const [historico, setHistorico] = useState<ExtratoHistoricoItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const adolescenteId =
-    session?.usuario.tipo === "adolescente" ? session.perfil.id : "ado-1";
+  const carregar = useCallback(async () => {
+    if (!adolescenteId) {
+      setLoading(false);
+      return;
+    }
 
-  const painel =
-    mockPainelFinanceiroPorAdolescenteId[adolescenteId] ??
-    mockPainelFinanceiroPorAdolescenteId["ado-1"];
+    try {
+      setLoading(true);
+      setError(null);
+      const [painel, extrato] = await Promise.all([
+        buscarPainelFinanceiroDoAdolescente(adolescenteId),
+        listarExtratoDoAdolescente(adolescenteId),
+      ]);
 
-  const historico =
-    mockExtratoCompletoPorAdolescenteId[adolescenteId] ??
-    mockExtratoCompletoPorAdolescenteId["ado-1"];
+      setSaldoTotal(painel.saldoTotal);
+      setHistorico(extrato.map((item) => ({ ...item, categoria: getCategoria(item) })));
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setLoading(false);
+    }
+  }, [adolescenteId]);
 
-  const periodoAtual = historico[0]?.periodo ?? "Mês atual";
+  useFocusEffect(
+    useCallback(() => {
+      void carregar();
+    }, [carregar]),
+  );
+
+  const periodoAtual = historico[0]?.data ? formatMonthYear(historico[0].data) : "Mes atual";
 
   const itensFiltrados = useMemo(() => {
     if (filtroAtivo === "tudo") {
@@ -105,7 +155,9 @@ export default function ExtratoScreen() {
           acc.totalMissoes += item.valor;
         }
 
-        acc.totalRecebido += item.valor;
+        if (item.tipo === "credito") {
+          acc.totalRecebido += item.valor;
+        }
         return acc;
       },
       {
@@ -115,6 +167,29 @@ export default function ExtratoScreen() {
       },
     );
   }, [historico]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={stylePainel.statementScreen}>
+        <View style={[stylePainel.statementScrollContent, { flex: 1, justifyContent: "center" }]}> 
+          <ActivityIndicator size="large" color="#4F46E5" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={stylePainel.statementScreen}>
+        <View style={[stylePainel.statementScrollContent, { flex: 1, justifyContent: "center" }]}> 
+          <Text style={stylePainel.statementHeaderTitle}>{error}</Text>
+          <TouchableOpacity style={stylePainel.statementFilterButtonActive} onPress={() => void carregar()}>
+            <Text style={stylePainel.statementFilterTextActive}>Tentar novamente</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={stylePainel.statementScreen} edges={[]}>
@@ -143,7 +218,7 @@ export default function ExtratoScreen() {
 
           <Text style={stylePainel.statementHeaderTitle}>Extrato</Text>
           <Text style={stylePainel.statementHeaderSubtitle}>
-            Histórico de transações
+            Historico de transacoes
           </Text>
         </LinearGradient>
 
@@ -155,7 +230,7 @@ export default function ExtratoScreen() {
             </View>
 
             <Text style={stylePainel.statementBalanceValue}>
-              {formatCurrency(painel.saldoTotal)}
+              {formatCurrency(saldoTotal)}
             </Text>
           </View>
         </Animated.View>
@@ -191,9 +266,13 @@ export default function ExtratoScreen() {
 
         <Animated.View entering={FadeInDown.duration(220).delay(110)}>
           <View style={stylePainel.statementList}>
-            {itensFiltrados.map((item) => (
-              <ExtratoItemCard key={item.id} item={item} />
-            ))}
+            {itensFiltrados.length ? (
+              itensFiltrados.map((item) => (
+                <ExtratoItemCard key={item.id} item={item} />
+              ))
+            ) : (
+              <Text style={stylePainel.statementSummaryLabel}>Nenhuma movimentacao encontrada.</Text>
+            )}
           </View>
         </Animated.View>
 
@@ -216,7 +295,7 @@ export default function ExtratoScreen() {
             <View style={stylePainel.statementSummaryRow}>
               <View style={stylePainel.statementSummaryLabelRow}>
                 <Feather name="target" size={14} color="#A855F7" />
-                <Text style={stylePainel.statementSummaryLabel}>Total Missões</Text>
+                <Text style={stylePainel.statementSummaryLabel}>Total Missoes</Text>
               </View>
               <Text style={stylePainel.statementSummaryValue}>
                 {formatCurrency(resumo.totalMissoes)}

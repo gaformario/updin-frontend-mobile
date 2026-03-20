@@ -1,19 +1,26 @@
 import { useAuth } from "@/features/auth/context/AuthContext";
-import { mockPainelFinanceiroPorAdolescenteId } from "@/services/mock-painel-financeiro-adolescente";
+import {
+  buscarMissaoDoAdolescente,
+  concluirMissaoDoAdolescente,
+} from "@/services/adolescente";
 import { adolescenteConcluirMissaoStyles as styles } from "@/styles/adolescente/concluir-missao";
 import { formatCurrency } from "@/utils/currency";
+import { getErrorMessage, getErrorTitle } from "@/utils/errors";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  Image,
+  Alert,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 export default function ConcluirMissaoScreen() {
   const { missaoId } = useLocalSearchParams<{ missaoId: string }>();
@@ -21,18 +28,89 @@ export default function ConcluirMissaoScreen() {
   const insets = useSafeAreaInsets();
   const [comentario, setComentario] = useState("");
   const [fotoSelecionada, setFotoSelecionada] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [missaoTitulo, setMissaoTitulo] = useState("");
+  const [recompensa, setRecompensa] = useState(0);
 
-  const adolescenteId =
-    session?.usuario.tipo === "adolescente" ? session.perfil.id : "ado-1";
+  const adolescenteId = session?.perfis.adolescenteId;
 
-  const painel =
-    mockPainelFinanceiroPorAdolescenteId[adolescenteId] ??
-    mockPainelFinanceiroPorAdolescenteId["ado-1"];
+  useEffect(() => {
+    let active = true;
 
-  const missao =
-    painel.missoesAtivas.find((item) => item.id === String(missaoId)) ?? null;
+    async function carregar() {
+      if (!adolescenteId || !missaoId) {
+        if (active) {
+          setLoading(false);
+        }
+        return;
+      }
 
-  if (!missao) {
+      try {
+        setLoading(true);
+        setError(null);
+        const missao = await buscarMissaoDoAdolescente(
+          adolescenteId,
+          String(missaoId),
+        );
+
+        if (active && missao) {
+          setMissaoTitulo(missao.titulo);
+          setRecompensa(missao.recompensa);
+        }
+      } catch (requestError) {
+        if (active) {
+          setError(getErrorMessage(requestError));
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void carregar();
+
+    return () => {
+      active = false;
+    };
+  }, [adolescenteId, missaoId]);
+
+  async function handleSubmit() {
+    if (!missaoId || saving) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await concluirMissaoDoAdolescente(
+        String(missaoId),
+        comentario || undefined,
+      );
+
+      Alert.alert("Sucesso", "Missao enviada para validacao.", [
+        {
+          text: "OK",
+          onPress: () => router.replace("/(protected)/adolescente/home"),
+        },
+      ]);
+    } catch (requestError) {
+      Alert.alert(getErrorTitle(requestError), getErrorMessage(requestError));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.notFoundContainer}>
+        <Text>Carregando...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (error || !missaoTitulo) {
     return (
       <SafeAreaView style={styles.notFoundContainer}>
         <TouchableOpacity
@@ -41,17 +119,16 @@ export default function ConcluirMissaoScreen() {
           style={styles.notFoundBack}
         >
           <Feather name="arrow-left" size={18} color="#101828" />
-          <Text style={styles.notFoundBackText}>Voltar</Text>
+          <Text style={styles.notFoundBackText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.notFoundTitle}>Missão não encontrada</Text>
+        <Text style={styles.notFoundTitle}>Missao nao encontrada</Text>
         <Text style={styles.notFoundText}>
-          Não foi possível abrir o envio para validação dessa missão.
+          {error ??
+            "Nao foi possivel abrir o envio para validacao dessa missao."}
         </Text>
       </SafeAreaView>
     );
   }
-
-  const fotoMock = missao.evidencias[0]?.imagem;
 
   return (
     <SafeAreaView style={styles.screen} edges={[]}>
@@ -64,13 +141,16 @@ export default function ConcluirMissaoScreen() {
           <Feather name="arrow-left" size={22} color="#FFF" />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Marcar como Concluída</Text>
-        <Text style={styles.headerSubtitle}>{missao.titulo}</Text>
+        <Text style={styles.headerTitle}>Marcar como Concluida</Text>
+        <Text style={styles.headerSubtitle}>{missaoTitulo}</Text>
       </View>
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: insets.bottom + 24 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.confirmCard}>
@@ -79,28 +159,30 @@ export default function ConcluirMissaoScreen() {
               <Ionicons name="checkmark" size={34} color="#FFF" />
             </View>
           </View>
-          <Text style={styles.confirmTitle}>Missão Concluída?</Text>
+          <Text style={styles.confirmTitle}>Missao Concluida?</Text>
           <Text style={styles.confirmText}>
-            Você está prestes a marcar esta missão como concluída. Adicione
-            evidências para acelerar a aprovação!
+            Voce esta prestes a marcar esta missao como concluida. Adicione um
+            comentario para acelerar a aprovacao.
           </Text>
         </View>
 
         <View style={styles.rewardCard}>
-          <Text style={styles.rewardLabel}>Valor a Receber (após aprovação)</Text>
-          <Text style={styles.rewardValue}>{formatCurrency(missao.recompensa)}</Text>
+          <Text style={styles.rewardLabel}>
+            Valor a Receber (apos aprovacao)
+          </Text>
+          <Text style={styles.rewardValue}>{formatCurrency(recompensa)}</Text>
         </View>
 
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Feather name="message-square" size={16} color="#2563EB" />
-            <Text style={styles.cardTitle}>Adicionar Comentário</Text>
+            <Text style={styles.cardTitle}>Adicionar Comentario</Text>
           </View>
 
           <TextInput
             value={comentario}
             onChangeText={setComentario}
-            placeholder="Descreva como completou a missão, dificuldades que encontrou, etc..."
+            placeholder="Descreva como completou a missao, dificuldades que encontrou, etc..."
             placeholderTextColor="#98A2B3"
             multiline
             textAlignVertical="top"
@@ -110,8 +192,12 @@ export default function ConcluirMissaoScreen() {
 
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <MaterialCommunityIcons name="camera-outline" size={18} color="#9333EA" />
-            <Text style={styles.cardTitle}>Anexar Foto de Comprovação</Text>
+            <MaterialCommunityIcons
+              name="camera-outline"
+              size={18}
+              color="#9333EA"
+            />
+            <Text style={styles.cardTitle}>Anexar Foto de Comprovacao</Text>
           </View>
 
           <TouchableOpacity
@@ -119,19 +205,18 @@ export default function ConcluirMissaoScreen() {
             style={styles.photoDropzone}
             onPress={() => setFotoSelecionada((value) => !value)}
           >
-            {fotoSelecionada && fotoMock ? (
-              <>
-                <Image source={fotoMock} style={styles.photoPreview} resizeMode="cover" />
-                <View style={styles.photoOverlay}>
-                  <Text style={styles.photoOverlayText}>Toque para trocar a foto</Text>
-                </View>
-              </>
-            ) : (
-              <View style={styles.photoPlaceholder}>
-                <MaterialCommunityIcons name="camera-outline" size={30} color="#98A2B3" />
-                <Text style={styles.photoPlaceholderText}>Toque para adicionar foto</Text>
-              </View>
-            )}
+            <View style={styles.photoPlaceholder}>
+              <MaterialCommunityIcons
+                name="camera-outline"
+                size={30}
+                color="#98A2B3"
+              />
+              <Text style={styles.photoPlaceholderText}>
+                {fotoSelecionada
+                  ? "Foto marcada localmente"
+                  : "Toque para simular uma foto"}
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -148,13 +233,21 @@ export default function ConcluirMissaoScreen() {
             activeOpacity={0.86}
             style={[styles.footerButton, styles.cancelButton]}
             onPress={() => router.back()}
+            disabled={saving}
           >
             <Text style={styles.cancelButtonText}>Cancelar</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity activeOpacity={0.86} style={[styles.footerButton, styles.submitButton]}>
+          <TouchableOpacity
+            activeOpacity={0.86}
+            style={[styles.footerButton, styles.submitButton]}
+            disabled={saving}
+            onPress={() => void handleSubmit()}
+          >
             <Feather name="send" size={16} color="#FFF" />
-            <Text style={styles.submitButtonText}>Enviar para Validação</Text>
+            <Text style={styles.submitButtonText}>
+              {saving ? "Enviando..." : "Enviar para Validacao"}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

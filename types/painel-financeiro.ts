@@ -1,4 +1,5 @@
 import type { ImageSourcePropType } from "react-native";
+import type { Periodicidade } from "@/types/entities";
 
 export interface AdolescenteResumo {
   id: string;
@@ -41,8 +42,14 @@ export interface MissaoValidacao extends MissaoAtiva {
 
 export interface AdolescentePainelFinanceiro {
   adolescenteId: string;
+  contaId: string | null;
+  responsavelId: string;
   nome: string;
   saldoTotal: number;
+  mesadaId: string | null;
+  mesadaValor: number;
+  mesadaPeriodicidade: Periodicidade | null;
+  mesadaAtiva: boolean;
   mesadaFixa: number;
   variavel: number;
   extratoRecente: ExtratoItem[];

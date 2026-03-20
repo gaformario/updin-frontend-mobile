@@ -4,6 +4,7 @@ import { GradientIcon } from "@/components/ui/GradientIcon";
 import { colors } from "@/constants/colors";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { loginAdolescenteStyles } from "@/styles/login-adolescente";
+import { getErrorMessage } from "@/utils/errors";
 import { Entypo, Feather, Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LinearGradient } from "expo-linear-gradient";
@@ -15,7 +16,7 @@ import { z } from "zod";
 const HOME_ROUTE = "/home";
 
 const loginAdolescenteSchema = z.object({
-  login: z.string().min(1, "Informe seu usuário"),
+  login: z.string().min(1, "Informe seu usuario"),
   senha: z.string().min(1, "Informe a senha"),
 });
 
@@ -45,8 +46,8 @@ export default function LoginAdolescenteScreen() {
       });
 
       router.replace("/(protected)/adolescente/home");
-    } catch {
-      Alert.alert("Erro", "Não foi possível entrar.");
+    } catch (error) {
+      Alert.alert("Erro", getErrorMessage(error));
     }
   }
 

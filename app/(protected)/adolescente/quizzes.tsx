@@ -1,82 +1,25 @@
+import { useAuth } from "@/features/auth/context/AuthContext";
+import {
+  buscarResumoQuizzesDoAdolescente,
+  listarQuizzesParaAdolescente,
+} from "@/services/quizzes";
 import { adolescenteQuizzesStyles as styles } from "@/styles/adolescente/quizzes";
+import type { AdolescenteQuizResumo, QuizzesResumo, QuizStatus } from "@/types/view-models";
+import { getErrorMessage } from "@/utils/errors";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback, useState } from "react";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
-import { Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
-type QuizStatus = "novo" | "em_progresso" | "concluido";
-
-type QuizItem = {
-  id: string;
-  titulo: string;
-  categoria: string;
-  questoes: number;
-  dificuldade: 1 | 2 | 3;
-  status: QuizStatus;
-  acao: string;
-  icone: keyof typeof MaterialCommunityIcons.glyphMap;
+const iconMap: Record<string, keyof typeof MaterialCommunityIcons.glyphMap> = {
+  poupanca: "bank-outline",
+  educacao: "school-outline",
+  investimento: "chart-line",
 };
-
-const summary = [
-  { label: "Concluídos", value: "12" },
-  { label: "Pontos XP", value: "850" },
-  { label: "Acertos", value: "87%" },
-];
-
-const quizzes: QuizItem[] = [
-  {
-    id: "quiz-1",
-    titulo: "Introdução à Poupança",
-    categoria: "Poupança",
-    questoes: 10,
-    dificuldade: 1,
-    status: "novo",
-    acao: "Jogar",
-    icone: "bank-outline",
-  },
-  {
-    id: "quiz-2",
-    titulo: "Entendendo Investimentos",
-    categoria: "Investimentos",
-    questoes: 12,
-    dificuldade: 2,
-    status: "em_progresso",
-    acao: "Continuar",
-    icone: "chart-line",
-  },
-  {
-    id: "quiz-3",
-    titulo: "Orçamento Pessoal",
-    categoria: "Planejamento",
-    questoes: 8,
-    dificuldade: 1,
-    status: "concluido",
-    acao: "Jogar Novamente",
-    icone: "chart-bar",
-  },
-  {
-    id: "quiz-4",
-    titulo: "Conceitos de Juros",
-    categoria: "Matemática Financeira",
-    questoes: 15,
-    dificuldade: 3,
-    status: "novo",
-    acao: "Jogar",
-    icone: "cash-multiple",
-  },
-  {
-    id: "quiz-5",
-    titulo: "Consumo Consciente",
-    categoria: "Educação",
-    questoes: 10,
-    dificuldade: 1,
-    status: "novo",
-    acao: "Jogar",
-    icone: "recycle",
-  },
-];
 
 const statusMap: Record<
   QuizStatus,
@@ -93,13 +36,13 @@ const statusMap: Record<
     textStyle: styles.badgeOrangeText,
   },
   concluido: {
-    label: "Concluído",
+    label: "Concluido",
     containerStyle: styles.badgeGreen,
     textStyle: styles.badgeGreenText,
   },
 };
 
-function DifficultyStars({ value }: { value: QuizItem["dificuldade"] }) {
+function DifficultyStars({ value }: { value: AdolescenteQuizResumo["dificuldade"] }) {
   return (
     <View style={styles.starsRow}>
       {[1, 2, 3].map((star) => (
@@ -115,7 +58,69 @@ function DifficultyStars({ value }: { value: QuizItem["dificuldade"] }) {
 }
 
 export default function QuizzesScreen() {
+  const { session } = useAuth();
   const insets = useSafeAreaInsets();
+  const adolescenteId = session?.perfis.adolescenteId;
+  const [summary, setSummary] = useState<QuizzesResumo>({
+    concluidos: 0,
+    pontosXp: 0,
+    acertosPercentual: 0,
+  });
+  const [quizzes, setQuizzes] = useState<AdolescenteQuizResumo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const carregar = useCallback(async () => {
+    if (!adolescenteId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const [resumo, lista] = await Promise.all([
+        buscarResumoQuizzesDoAdolescente(adolescenteId),
+        listarQuizzesParaAdolescente(adolescenteId),
+      ]);
+
+      setSummary(resumo);
+      setQuizzes(lista);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setLoading(false);
+    }
+  }, [adolescenteId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void carregar();
+    }, [carregar]),
+  );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={[styles.content, { flex: 1, justifyContent: "center" }]}> 
+          <ActivityIndicator size="large" color="#8B3DFF" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={[styles.content, { flex: 1, justifyContent: "center" }]}> 
+          <Text style={styles.heroTitle}>{error}</Text>
+          <TouchableOpacity style={styles.actionButtonPrimary} onPress={() => void carregar()}>
+            <Text style={styles.actionButtonTextPrimary}>Tentar novamente</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.screen} edges={[]}>
@@ -147,7 +152,11 @@ export default function QuizzesScreen() {
         </LinearGradient>
 
         <Animated.View entering={FadeInDown.duration(220).delay(40)} style={styles.summaryRow}>
-          {summary.map((item) => (
+          {[
+            { label: "Concluidos", value: String(summary.concluidos) },
+            { label: "Pontos XP", value: String(summary.pontosXp) },
+            { label: "Acertos", value: `${summary.acertosPercentual}%` },
+          ].map((item) => (
             <View key={item.label} style={styles.summaryCard}>
               <Text style={styles.summaryValue}>{item.value}</Text>
               <Text style={styles.summaryLabel}>{item.label}</Text>
@@ -156,74 +165,69 @@ export default function QuizzesScreen() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.duration(220).delay(80)} style={styles.list}>
-          {quizzes.map((quiz, index) => {
-            const status = statusMap[quiz.status];
+          {quizzes.length ? (
+            quizzes.map((quiz, index) => {
+              const status = statusMap[quiz.status];
+              const iconKey = quiz.categoria.toLowerCase().split(" ")[0];
 
-            return (
-              <Animated.View
-                key={quiz.id}
-                entering={FadeInDown.duration(220).delay(110 + index * 35)}
-                style={styles.quizCard}
-              >
-                <View style={styles.quizHeader}>
-                  <View style={styles.quizIconWrap}>
-                    <MaterialCommunityIcons
-                      name={quiz.icone}
-                      size={24}
-                      color="#8B5CF6"
-                    />
-                  </View>
-
-                  <View style={styles.quizMain}>
-                    <View style={styles.quizTitleRow}>
-                      <Text style={styles.quizTitle}>{quiz.titulo}</Text>
-                      <View style={[styles.badgeBase, status.containerStyle]}>
-                        <Text style={[styles.badgeTextBase, status.textStyle]}>
-                          {status.label}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <Text style={styles.quizCategory}>{quiz.categoria}</Text>
-
-                    <View style={styles.quizMetaRow}>
-                      <View style={styles.quizMetaItem}>
-                        <Feather name="clock" size={12} color="#667085" />
-                        <Text style={styles.quizMetaText}>{quiz.questoes} questões</Text>
-                      </View>
-                      <DifficultyStars value={quiz.dificuldade} />
-                    </View>
-                  </View>
-                </View>
-
-                <TouchableOpacity
-                  activeOpacity={0.86}
-                  style={[
-                    styles.actionButton,
-                    quiz.status === "concluido"
-                      ? styles.actionButtonMuted
-                      : styles.actionButtonPrimary,
-                  ]}
+              return (
+                <Animated.View
+                  key={quiz.id}
+                  entering={FadeInDown.duration(220).delay(110 + index * 35)}
+                  style={styles.quizCard}
                 >
-                  <Ionicons
-                    name={quiz.status === "concluido" ? "refresh-circle-outline" : "play-outline"}
-                    size={16}
-                    color={quiz.status === "concluido" ? "#667085" : "#FFF"}
-                  />
-                  <Text
-                    style={[
-                      styles.actionButtonText,
-                      quiz.status === "concluido"
-                        ? styles.actionButtonTextMuted
-                        : styles.actionButtonTextPrimary,
-                    ]}
+                  <View style={styles.quizHeader}>
+                    <View style={styles.quizIconWrap}>
+                      <MaterialCommunityIcons
+                        name={iconMap[iconKey] ?? "book-open-page-variant-outline"}
+                        size={24}
+                        color="#8B5CF6"
+                      />
+                    </View>
+
+                    <View style={styles.quizMain}>
+                      <View style={styles.quizTitleRow}>
+                        <Text style={styles.quizTitle}>{quiz.titulo}</Text>
+                        <View style={[styles.badgeBase, status.containerStyle]}>
+                          <Text style={[styles.badgeTextBase, status.textStyle]}>
+                            {status.label}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <Text style={styles.quizCategory}>{quiz.categoria}</Text>
+
+                      <View style={styles.quizMetaRow}>
+                        <View style={styles.quizMetaItem}>
+                          <Feather name="clock" size={12} color="#667085" />
+                          <Text style={styles.quizMetaText}>{quiz.questoes} questoes</Text>
+                        </View>
+                        <DifficultyStars value={quiz.dificuldade} />
+                      </View>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity
+                    activeOpacity={0.86}
+                    style={styles.actionButtonPrimary}
+                    onPress={() =>
+                      Alert.alert(
+                        "Em breve",
+                        "A API de quizzes ja esta integrada, mas a tela de tentativa ainda nao existe neste app.",
+                      )
+                    }
                   >
-                    {quiz.acao}
-                  </Text>
-                </TouchableOpacity>
-              </Animated.View>
-            );
-          })}
+                    <Ionicons name="play-outline" size={16} color="#FFF" />
+                    <Text style={styles.actionButtonTextPrimary}>
+                      {quiz.acao}
+                    </Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              );
+            })
+          ) : (
+            <Text style={styles.heroSubtitle}>Nenhum quiz disponivel no momento.</Text>
+          )}
         </Animated.View>
       </Animated.ScrollView>
     </SafeAreaView>

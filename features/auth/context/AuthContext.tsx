@@ -1,14 +1,22 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
 } from "react";
 
-import { signInRequest } from "@/features/auth/services/auth";
+import {
+  restoreSession,
+  signInRequest,
+} from "@/features/auth/services/auth";
 import type { AuthSession, LoginPayload } from "@/features/auth/types";
+import {
+  setApiAuthToken,
+  subscribeToUnauthorized,
+} from "@/services/api-client";
 import type { AdolescenteResumo } from "@/types/painel-financeiro";
 
 type AuthContextData = {
@@ -27,64 +35,74 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    void loadSession();
+  const clearSession = useCallback(async () => {
+    setApiAuthToken(null);
+    await AsyncStorage.removeItem(STORAGE_KEY);
+    setSession(null);
   }, []);
 
-  async function loadSession() {
+  const persistSession = useCallback(async (nextSession: AuthSession) => {
+    setApiAuthToken(nextSession.token);
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nextSession));
+    setSession(nextSession);
+  }, []);
+
+  const loadSession = useCallback(async () => {
     try {
       const storedSession = await AsyncStorage.getItem(STORAGE_KEY);
 
       if (storedSession) {
-        const parsedSession = JSON.parse(storedSession) as Partial<AuthSession>;
+        const parsedSession = JSON.parse(storedSession) as AuthSession;
+        const restoredSession = await restoreSession(parsedSession);
 
-        setSession({
-          ...parsedSession,
-          adolescenteSelecionado: parsedSession.adolescenteSelecionado ?? null,
-        } as AuthSession);
+        await persistSession(restoredSession);
       }
-    } catch (error) {
-      console.error("Erro ao carregar sessao", error);
+    } catch {
+      await clearSession();
     } finally {
       setLoading(false);
     }
-  }
+  }, [clearSession, persistSession]);
 
-  async function persistSession(nextSession: AuthSession) {
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nextSession));
-    setSession(nextSession);
-  }
+  useEffect(() => {
+    void loadSession();
+  }, [loadSession]);
 
-  async function signIn(payload: LoginPayload) {
-    const response = await signInRequest(payload);
+  useEffect(() => {
+    const unsubscribe = subscribeToUnauthorized(() => {
+      void clearSession();
+    });
 
-    const authSession: AuthSession = {
-      token: response.token,
-      usuario: response.usuario,
-      perfil: response.perfil,
-      adolescenteSelecionado: null,
-    };
+    return unsubscribe;
+  }, [clearSession]);
 
-    await persistSession(authSession);
-  }
+  const signIn = useCallback(
+    async (payload: LoginPayload) => {
+      const authSession = await signInRequest(payload);
+      await persistSession(authSession);
+    },
+    [persistSession],
+  );
 
-  async function selectAdolescente(adolescente: AdolescenteResumo) {
-    if (!session) {
-      return;
-    }
+  const selectAdolescente = useCallback(
+    async (adolescente: AdolescenteResumo) => {
+      if (!session) {
+        return;
+      }
 
-    const updatedSession: AuthSession = {
-      ...session,
-      adolescenteSelecionado: adolescente,
-    };
+      const updatedSession: AuthSession = {
+        ...session,
+        adolescenteSelecionado: adolescente,
+      };
 
-    await persistSession(updatedSession);
-  }
+      await persistSession(updatedSession);
+    },
+    [persistSession, session],
+  );
 
-  async function signOut() {
-    await AsyncStorage.removeItem(STORAGE_KEY);
-    setSession(null);
-  }
+  const signOut = useCallback(async () => {
+    await clearSession();
+  }, [clearSession]);
 
   const value = useMemo(
     () => ({
@@ -94,8 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       selectAdolescente,
       signOut,
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [loading, session],
+    [loading, selectAdolescente, session, signIn, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

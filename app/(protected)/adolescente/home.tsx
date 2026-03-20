@@ -1,7 +1,9 @@
 import { useAuth } from "@/features/auth/context/AuthContext";
-import { mockPainelFinanceiroPorAdolescenteId } from "@/services/mock-painel-financeiro-adolescente";
+import { buscarPainelFinanceiroDoAdolescente } from "@/services/adolescente";
 import { adolescenteHomeStyles as stylePainel } from "@/styles/adolescente/home";
+import type { AdolescentePainelFinanceiro } from "@/types/painel-financeiro";
 import { formatCurrency } from "@/utils/currency";
+import { getErrorMessage } from "@/utils/errors";
 import { getInitials } from "@/utils/initials";
 import {
   Feather,
@@ -11,8 +13,10 @@ import {
 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback, useState } from "react";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
-import { Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 const quickActions = [
@@ -39,22 +43,66 @@ const quickActions = [
 ];
 
 const missionIcons = ["car-sport-outline", "book-outline", "cart-outline"] as const;
-
 const missionProgress = {
-  mesada: 0.65,
-  missoes: 0.35,
+  mesada: 0.8,
+  missoes: 0.2,
 };
 
 export default function HomeAdolescente() {
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
+  const adolescenteId = session?.perfis.adolescenteId;
+  const [painel, setPainel] = useState<AdolescentePainelFinanceiro | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const adolescenteId =
-    session?.usuario.tipo === "adolescente" ? session.perfil.id : "ado-1";
+  const carregar = useCallback(async () => {
+    if (!adolescenteId) {
+      setPainel(null);
+      setLoading(false);
+      return;
+    }
 
-  const painel =
-    mockPainelFinanceiroPorAdolescenteId[adolescenteId] ??
-    mockPainelFinanceiroPorAdolescenteId["ado-1"];
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await buscarPainelFinanceiroDoAdolescente(adolescenteId);
+      setPainel(data);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setLoading(false);
+    }
+  }, [adolescenteId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void carregar();
+    }, [carregar]),
+  );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={stylePainel.container}>
+        <View style={[stylePainel.scrollContent, { flex: 1, justifyContent: "center" }]}> 
+          <ActivityIndicator size="large" color="#8B3DFF" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error || !painel) {
+    return (
+      <SafeAreaView style={stylePainel.container}>
+        <View style={[stylePainel.scrollContent, { flex: 1, justifyContent: "center" }]}> 
+          <Text style={stylePainel.sectionTitle}>{error ?? "Nao foi possivel carregar o painel."}</Text>
+          <TouchableOpacity style={stylePainel.actionCard} onPress={() => void carregar()}>
+            <Text style={stylePainel.actionLabel}>Tentar novamente</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const primeiroNome = painel.nome.split(" ")[0];
 
@@ -78,7 +126,7 @@ export default function HomeAdolescente() {
                 <Text style={stylePainel.headerAvatarEmoji}>{getInitials(painel.nome)}</Text>
               </View>
               <View>
-                <Text style={stylePainel.headerName}>Olá, {primeiroNome}!</Text>
+                <Text style={stylePainel.headerName}>Ola, {primeiroNome}!</Text>
                 <Text style={stylePainel.headerSubtitle}>Bem-vindo de volta</Text>
               </View>
             </View>
@@ -86,13 +134,15 @@ export default function HomeAdolescente() {
             <TouchableOpacity activeOpacity={0.8} style={stylePainel.notificationButton}>
               <Ionicons name="notifications-outline" size={20} color="#FFF" />
               <View style={stylePainel.notificationBadge}>
-                <Text style={stylePainel.notificationBadgeText}>2</Text>
+                <Text style={stylePainel.notificationBadgeText}>
+                  {painel.missoesAtivas.filter((missao) => missao.status === "aguardando_validacao").length}
+                </Text>
               </View>
             </TouchableOpacity>
           </View>
 
           <View style={stylePainel.balanceCard}>
-            <Text style={stylePainel.balanceLabel}>Saldo Disponível</Text>
+            <Text style={stylePainel.balanceLabel}>Saldo Disponivel</Text>
             <Text style={stylePainel.balanceValue}>
               {formatCurrency(painel.saldoTotal)}
             </Text>
@@ -106,49 +156,53 @@ export default function HomeAdolescente() {
               />
             </View>
 
-            <Text style={stylePainel.progressText}>65% Mesada | 35% Missões</Text>
+            <Text style={stylePainel.progressText}>80% Mesada | 20% Missoes</Text>
           </View>
         </LinearGradient>
 
         <Animated.View entering={FadeInDown.duration(220).delay(40)}>
           <View style={stylePainel.sectionCard}>
             <View style={stylePainel.sectionHeader}>
-              <Text style={stylePainel.sectionTitle}>Missões Pendentes</Text>
+              <Text style={stylePainel.sectionTitle}>Missoes Pendentes</Text>
               <Text style={stylePainel.sectionMeta}>
                 {painel.missoesAtivas.length} ativas
               </Text>
             </View>
 
             <View style={stylePainel.missionList}>
-              {painel.missoesAtivas.map((missao, index) => (
-                <TouchableOpacity
-                  key={missao.id}
-                  activeOpacity={0.86}
-                  style={stylePainel.missionCard}
-                  onPress={() =>
-                    router.push(`/(protected)/adolescente/missao/${missao.id}` as any)
-                  }
-                >
-                  <View style={stylePainel.rowIcon}>
-                    <Ionicons
-                      name={missionIcons[index] ?? "sparkles-outline"}
-                      size={20}
-                      color="#7C3AED"
-                    />
-                  </View>
+              {painel.missoesAtivas.length ? (
+                painel.missoesAtivas.map((missao, index) => (
+                  <TouchableOpacity
+                    key={missao.id}
+                    activeOpacity={0.86}
+                    style={stylePainel.missionCard}
+                    onPress={() =>
+                      router.push(`/(protected)/adolescente/missao/${missao.id}` as any)
+                    }
+                  >
+                    <View style={stylePainel.rowIcon}>
+                      <Ionicons
+                        name={missionIcons[index] ?? "sparkles-outline"}
+                        size={20}
+                        color="#7C3AED"
+                      />
+                    </View>
 
-                  <View style={stylePainel.rowContent}>
-                    <Text style={stylePainel.rowTitle}>{missao.titulo}</Text>
-                    <Text style={stylePainel.rowSubtitle}>
-                      Toque para ver detalhes
+                    <View style={stylePainel.rowContent}>
+                      <Text style={stylePainel.rowTitle}>{missao.titulo}</Text>
+                      <Text style={stylePainel.rowSubtitle}>
+                        Toque para ver detalhes
+                      </Text>
+                    </View>
+
+                    <Text style={stylePainel.rowValue}>
+                      +{formatCurrency(missao.recompensa)}
                     </Text>
-                  </View>
-
-                  <Text style={stylePainel.rowValue}>
-                    +{formatCurrency(missao.recompensa)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={stylePainel.rowSubtitle}>Nenhuma missao pendente.</Text>
+              )}
             </View>
           </View>
         </Animated.View>
@@ -182,8 +236,7 @@ export default function HomeAdolescente() {
             </View>
 
             <Text style={stylePainel.tipText}>
-              Guardar 10% do que você ganha é um ótimo hábito para começar a
-              poupar!
+              Guardar uma parte da sua mesada antes de gastar ajuda a criar o habito de poupar.
             </Text>
           </LinearGradient>
         </Animated.View>

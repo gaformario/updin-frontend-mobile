@@ -1,48 +1,65 @@
 import { useAuth } from "@/features/auth/context/AuthContext";
+import { buscarResumoPerfilDoAdolescente } from "@/services/adolescente";
+import { buscarRankingParaTela } from "@/services/ranking";
 import { adolescentePerfilStyles as stylePainel } from "@/styles/adolescente/perfil";
+import type { AdolescenteProfileResumo } from "@/types/view-models";
+import { getErrorMessage } from "@/utils/errors";
 import { getInitials } from "@/utils/initials";
-import {
-  Feather,
-  Ionicons,
-  MaterialCommunityIcons,
-} from "@expo/vector-icons";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import { useCallback, useState } from "react";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
-import { Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-
-const estatisticas = [
-  {
-    key: "missoes",
-    label: "Missões",
-    value: 24,
-    icon: <Feather name="target" size={18} color="#A855F7" />,
-    backgroundColor: "#F3E8FF",
-  },
-  {
-    key: "quizzes",
-    label: "Quizzes",
-    value: 12,
-    icon: <Ionicons name="book-outline" size={18} color="#3B82F6" />,
-    backgroundColor: "#DBEAFE",
-  },
-  {
-    key: "conquistas",
-    label: "Conquistas",
-    value: 4,
-    icon: <Feather name="award" size={18} color="#F59E0B" />,
-    backgroundColor: "#FEF3C7",
-  },
-];
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 const conquistas = [
-  { key: "primeira-missao", label: "Primeira\nMissão", icon: "🏆", active: true },
-  { key: "poupador", label: "Poupador", icon: "💰", active: true },
-  { key: "estudante", label: "Estudante", icon: "📚", active: true },
-  { key: "estrela", label: "Estrela", icon: "⭐", active: true },
-  { key: "focado", label: "Focado", icon: "🎯", active: false },
-  { key: "sequencia", label: "Sequência", icon: "🔥", active: false },
+  {
+    key: "primeira-missao",
+    label: "Primeira\nMissao",
+    icon: <Feather name="target" size={22} color="#7C3AED" />,
+    active: true,
+  },
+  {
+    key: "poupador",
+    label: "Poupador",
+    icon: (
+      <MaterialCommunityIcons
+        name="piggy-bank-outline"
+        size={22}
+        color="#16A34A"
+      />
+    ),
+    active: true,
+  },
+  {
+    key: "estudante",
+    label: "Estudante",
+    icon: <Ionicons name="book-outline" size={22} color="#2563EB" />,
+    active: true,
+  },
+  {
+    key: "estrela",
+    label: "Estrela",
+    icon: <Ionicons name="star-outline" size={22} color="#F59E0B" />,
+    active: true,
+  },
+  {
+    key: "focado",
+    label: "Focado",
+    icon: <Feather name="crosshair" size={22} color="#98A2B3" />,
+    active: false,
+  },
+  {
+    key: "sequencia",
+    label: "Sequencia",
+    icon: <MaterialCommunityIcons name="fire" size={22} color="#98A2B3" />,
+    active: false,
+  },
 ];
 
 const configuracoes = [
@@ -54,7 +71,7 @@ const configuracoes = [
   },
   {
     key: "notificacoes",
-    label: "Notificações",
+    label: "Notificacoes",
     icon: <Ionicons name="notifications-outline" size={16} color="#A855F7" />,
     backgroundColor: "#F3E8FF",
   },
@@ -67,24 +84,121 @@ const configuracoes = [
 ];
 
 const evolucaoSemanal = [
-  { key: "s1", semana: "S1", pontos: 450 },
-  { key: "s2", semana: "S2", pontos: 680 },
-  { key: "s3", semana: "S3", pontos: 820 },
-  { key: "s4", semana: "S4", pontos: 950 },
-  { key: "s5", semana: "S5", pontos: 1180 },
+  { key: "s1", semana: "S1", pontos: 0 },
+  { key: "s2", semana: "S2", pontos: 0 },
+  { key: "s3", semana: "S3", pontos: 0 },
+  { key: "s4", semana: "S4", pontos: 0 },
+  { key: "s5", semana: "S5", pontos: 0 },
 ];
 
 export default function PerfilScreen() {
   const { session, signOut } = useAuth();
   const insets = useSafeAreaInsets();
+  const adolescenteId = session?.perfis.adolescenteId;
+  const responsavelId =
+    session?.usuario.tipo === "adolescente" &&
+    session?.perfil &&
+    "responsavelId" in session.perfil
+      ? session.perfil.responsavelId
+      : null;
+  const [resumo, setResumo] = useState<AdolescenteProfileResumo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const nome = session?.usuario.nome ?? "Lucas Silva";
-  const usuario = session?.usuario.usuario ?? "lucassilva";
+  const carregar = useCallback(async () => {
+    if (!session || !adolescenteId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const ranking = await buscarRankingParaTela({
+        periodo: "geral",
+        adolescenteId,
+        responsavelId,
+      });
+      const profile = await buscarResumoPerfilDoAdolescente({
+        adolescenteId,
+        usuario: session.usuario,
+        ranking,
+      });
+
+      setResumo(profile);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setLoading(false);
+    }
+  }, [adolescenteId, responsavelId, session]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void carregar();
+    }, [carregar]),
+  );
 
   async function handleSignOut() {
     await signOut();
     router.replace("/(auth)/login-adolescente");
   }
+
+  if (loading) {
+    return (
+      <SafeAreaView style={stylePainel.profileScreen}>
+        <View
+          style={[
+            stylePainel.profileScrollContent,
+            { flex: 1, justifyContent: "center" },
+          ]}
+        >
+          <ActivityIndicator size="large" color="#9333EA" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error || !resumo) {
+    return (
+      <SafeAreaView style={stylePainel.profileScreen}>
+        <View
+          style={[
+            stylePainel.profileScrollContent,
+            { flex: 1, justifyContent: "center" },
+          ]}
+        >
+          <Text style={stylePainel.profileSectionTitle}>
+            {error ?? "Nao foi possivel carregar o perfil."}
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const estatisticas = [
+    {
+      key: "missoes",
+      label: "Missoes",
+      value: resumo.totalMissoes,
+      icon: <Feather name="target" size={18} color="#A855F7" />,
+      backgroundColor: "#F3E8FF",
+    },
+    {
+      key: "quizzes",
+      label: "Quizzes",
+      value: resumo.totalQuizzes,
+      icon: <Ionicons name="book-outline" size={18} color="#3B82F6" />,
+      backgroundColor: "#DBEAFE",
+    },
+    {
+      key: "conquistas",
+      label: "Conquistas",
+      value: resumo.totalConquistas,
+      icon: <Feather name="award" size={18} color="#F59E0B" />,
+      backgroundColor: "#FEF3C7",
+    },
+  ];
 
   return (
     <SafeAreaView style={stylePainel.profileScreen} edges={[]}>
@@ -105,7 +219,9 @@ export default function PerfilScreen() {
         >
           <View style={stylePainel.profileAvatarWrap}>
             <View style={stylePainel.profileAvatar}>
-              <Text style={stylePainel.profileAvatarText}>{getInitials(nome)}</Text>
+              <Text style={stylePainel.profileAvatarText}>
+                {getInitials(resumo.nome)}
+              </Text>
             </View>
 
             <TouchableOpacity
@@ -116,8 +232,8 @@ export default function PerfilScreen() {
             </TouchableOpacity>
           </View>
 
-          <Text style={stylePainel.profileName}>{nome}</Text>
-          <Text style={stylePainel.profileHandle}>@{usuario}</Text>
+          <Text style={stylePainel.profileName}>{resumo.nome}</Text>
+          <Text style={stylePainel.profileHandle}>@{resumo.usuario}</Text>
         </LinearGradient>
 
         <Animated.View entering={FadeInDown.duration(220).delay(30)}>
@@ -147,7 +263,9 @@ export default function PerfilScreen() {
           <View style={stylePainel.profileSectionCard}>
             <View style={stylePainel.profileSectionHeader}>
               <Feather name="award" size={14} color="#F59E0B" />
-              <Text style={stylePainel.profileSectionTitle}>Minhas Conquistas</Text>
+              <Text style={stylePainel.profileSectionTitle}>
+                Minhas Conquistas
+              </Text>
             </View>
 
             <View style={stylePainel.profileBadgeGrid}>
@@ -184,15 +302,21 @@ export default function PerfilScreen() {
                 size={16}
                 color="#22C55E"
               />
-              <Text style={stylePainel.profileSectionTitle}>Evolução Mensal</Text>
+              <Text style={stylePainel.profileSectionTitle}>
+                Evolução Mensal
+              </Text>
             </View>
 
             <View style={stylePainel.profileEvolutionCard}>
               <View style={stylePainel.profileEvolutionRow}>
                 {evolucaoSemanal.map((item) => (
                   <View key={item.key} style={stylePainel.profileEvolutionItem}>
-                    <Text style={stylePainel.profileEvolutionValue}>{item.pontos}</Text>
-                    <Text style={stylePainel.profileEvolutionWeek}>{item.semana}</Text>
+                    <Text style={stylePainel.profileEvolutionValue}>
+                      {item.pontos}
+                    </Text>
+                    <Text style={stylePainel.profileEvolutionWeek}>
+                      {item.semana}
+                    </Text>
                   </View>
                 ))}
               </View>
@@ -224,7 +348,9 @@ export default function PerfilScreen() {
                     >
                       {item.icon}
                     </View>
-                    <Text style={stylePainel.profileSettingLabel}>{item.label}</Text>
+                    <Text style={stylePainel.profileSettingLabel}>
+                      {item.label}
+                    </Text>
                   </View>
 
                   <Feather name="chevron-right" size={16} color="#98A2B3" />
