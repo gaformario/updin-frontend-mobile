@@ -15,8 +15,8 @@ export const mockResponsavelCredentials = {
 
 export const mockResponsavelUsuario: Usuario = {
   id: "user-resp-1",
-  nome: "Gabriel Responsavel",
-  usuario: "gabriel.responsavel",
+  nome: "Gabriel Formario",
+  usuario: "gabriel.formario",
   email: mockResponsavelCredentials.email,
   senhaHash: "",
   tipo: "responsavel",
@@ -73,9 +73,9 @@ export const mockAdolescentesAssociados: Adolescente[] = [
 export const mockUsuariosAdolescentes: Usuario[] = [
   {
     id: "user-ado-1",
-    nome: "Joao Adolescente",
-    usuario: "joao.adolescente",
-    senhaHash: "",
+    nome: "Lucas Silva",
+    usuario: "lucas.silva",
+    senhaHash: "ado123",
     tipo: "adolescente",
     ativo: true,
     criadoEm: baseTimestamp,
@@ -83,9 +83,9 @@ export const mockUsuariosAdolescentes: Usuario[] = [
   },
   {
     id: "user-ado-2",
-    nome: "Maria Adolescente",
-    usuario: "maria.adolescente",
-    senhaHash: "",
+    nome: "Maria Silva",
+    usuario: "maria.silva",
+    senhaHash: "ado123",
     tipo: "adolescente",
     ativo: true,
     criadoEm: baseTimestamp,

@@ -4,7 +4,7 @@ const buttonGradient = ["#8B3DFF", "#E6007A"] as const;
 export const colors = {
   neutral: {
     white: "#FFFFFF",
-    background: "#F5F7FB",
+    background: "#e9ebee",
     card: "#F8F9FC",
     border: "#D0D5DD",
     text: "#101828",

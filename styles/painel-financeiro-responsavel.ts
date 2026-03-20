@@ -1,7 +1,7 @@
 import { colors } from "@/constants/colors";
 import { StyleSheet } from "react-native";
 
-export const stylePainel = StyleSheet.create({
+export const stylePainelResponsavel = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.neutral.background,
@@ -9,11 +9,16 @@ export const stylePainel = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    padding: 16,
+    gap: 14,
+  },
   loadingContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
+    backgroundColor: colors.neutral.background,
   },
   emptyTitle: {
     fontSize: 18,
@@ -34,7 +39,6 @@ export const stylePainel = StyleSheet.create({
   topHeader: {
     backgroundColor: colors.brand.blue,
     paddingHorizontal: 16,
-    paddingTop: 12,
     paddingBottom: 16,
   },
   headerRow: {
@@ -74,22 +78,6 @@ export const stylePainel = StyleSheet.create({
     color: "#DCE7FF",
     fontSize: 13,
     marginTop: 2,
-  },
-  pageTitleContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 4,
-    backgroundColor: colors.neutral.background,
-  },
-  pageTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: colors.neutral.text,
-  },
-  scrollContent: {
-    padding: 16,
-    gap: 14,
-    paddingBottom: 24,
   },
   balanceCard: {
     backgroundColor: "#08C443",
@@ -147,6 +135,10 @@ export const stylePainel = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
   actionLabel: {
     fontSize: 14,
@@ -160,6 +152,10 @@ export const stylePainel = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -181,9 +177,9 @@ export const stylePainel = StyleSheet.create({
     borderTopColor: "#F1F5F9",
   },
   rowIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,

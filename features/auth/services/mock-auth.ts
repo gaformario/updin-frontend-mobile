@@ -1,4 +1,4 @@
-﻿import type { Adolescente, Responsavel, Usuario } from "@/types/entities";
+import type { Adolescente, Responsavel, Usuario } from "@/types/entities";
 
 import {
   mockAdolescentesAssociados,
@@ -27,28 +27,38 @@ type MockAdolescenteAccount = MockAccountBase & {
 export type MockAccount = MockResponsavelAccount | MockAdolescenteAccount;
 export type MockAccounts = {
   responsavel: MockResponsavelAccount;
-  adolescente: MockAdolescenteAccount;
+  adolescente: MockAdolescenteAccount[];
 };
 
 export const mockCredentials = {
-  adolescente: {
-    usuario: mockUsuariosAdolescentes[0].usuario,
-    senha: "ado123",
-  },
+  adolescente: [
+    {
+      usuario: mockUsuariosAdolescentes[0].usuario,
+      senha: mockUsuariosAdolescentes[0].senhaHash,
+    },
+    {
+      usuario: mockUsuariosAdolescentes[1].usuario,
+      senha: mockUsuariosAdolescentes[1].senhaHash,
+    },
+  ],
   responsavel: mockResponsavelCredentials,
 } as const;
 
 export const mockAccounts: MockAccounts = {
   responsavel: mockResponsavelAccount,
-  adolescente: {
-    tipo: "adolescente",
-    senha: mockCredentials.adolescente.senha,
-    usuario: mockUsuariosAdolescentes[0],
-    perfil: mockAdolescentesAssociados[0],
-  },
+  adolescente: mockUsuariosAdolescentes.map((usuario, index) => ({
+    tipo: "adolescente" as const,
+    senha: mockCredentials.adolescente[index]?.senha ?? "ado123",
+    usuario,
+    perfil: mockAdolescentesAssociados[index],
+  })),
 };
 
-export { mockResponsavelAccount, mockResponsavelCredentials, mockResponsavelUsuario };
+export {
+  mockResponsavelAccount,
+  mockResponsavelCredentials,
+  mockResponsavelUsuario,
+};
 
 export function normalizeCpf(value: string) {
   return value.replace(/\D/g, "");

@@ -1,6 +1,6 @@
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { buscarPainelFinanceiroDoAdolescente } from "@/services/responsavel";
-import { stylePainel } from "@/styles/painel-financeiro-adolescente";
+import { stylePainelResponsavel as stylePainel } from "@/styles/painel-financeiro-responsavel";
 import type {
   AdolescentePainelFinanceiro,
   ExtratoItem,

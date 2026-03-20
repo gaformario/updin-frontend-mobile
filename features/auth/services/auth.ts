@@ -17,42 +17,52 @@ export async function signInRequest(
   const { login, senha, tipo } = payload;
   const normalizedLogin = normalizeLogin(login);
   const normalizedPassword = senha.trim();
-  const account = mockAccounts[tipo];
 
   if (!normalizedLogin || !normalizedPassword) {
     throw new Error("Preencha login e senha.");
   }
 
   if (tipo === "adolescente") {
+    const adolescenteAccount = mockAccounts.adolescente.find(
+      (candidate) => candidate.usuario.usuario.toLowerCase() === normalizedLogin,
+    );
+
     if (isValidEmail(normalizedLogin) || isValidCpf(normalizedLogin)) {
       throw new Error("Adolescente deve acessar apenas com usuario e senha.");
     }
 
-    if (normalizedLogin !== account.usuario.usuario.toLowerCase()) {
+    if (!adolescenteAccount) {
       throw new Error("Usuario de adolescente nao encontrado.");
     }
-  }
 
-  if (tipo === "responsavel") {
-    const responsavelAccount = mockAccounts.responsavel;
-    const cpf = normalizeCpf(normalizedLogin);
-    const email = normalizedLogin;
-    const matchesEmail =
-      email === responsavelAccount.usuario.email?.toLowerCase();
-    const matchesCpf = cpf === responsavelAccount.cpf;
-
-    if (!matchesEmail && !matchesCpf) {
-      throw new Error("Responsavel deve entrar com email ou CPF validos.");
+    if (normalizedPassword !== adolescenteAccount.senha) {
+      throw new Error("Senha invalida.");
     }
+
+    return {
+      token: `mock-token-${tipo}-${adolescenteAccount.perfil.id}`,
+      usuario: adolescenteAccount.usuario,
+      perfil: adolescenteAccount.perfil,
+    };
   }
 
-  if (normalizedPassword !== account.senha) {
+  const responsavelAccount = mockAccounts.responsavel;
+  const cpf = normalizeCpf(normalizedLogin);
+  const email = normalizedLogin;
+  const matchesEmail = email === responsavelAccount.usuario.email?.toLowerCase();
+  const matchesCpf = cpf === responsavelAccount.cpf;
+
+  if (!matchesEmail && !matchesCpf) {
+    throw new Error("Responsavel deve entrar com email ou CPF validos.");
+  }
+
+  if (normalizedPassword !== responsavelAccount.senha) {
     throw new Error("Senha invalida.");
   }
 
   return {
     token: `mock-token-${tipo}`,
-    usuario: account.usuario,
-    perfil: account.perfil,
+    usuario: responsavelAccount.usuario,
+    perfil: responsavelAccount.perfil,
   };
 }

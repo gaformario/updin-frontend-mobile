@@ -30,6 +30,9 @@ export interface EvidenciaMissao {
 
 export interface MissaoValidacao extends MissaoAtiva {
   descricao: string;
+  prazo?: string | null;
+  observacoesResponsavel?: string;
+  dica?: string;
   comentarioAdolescente: string;
   concluidaEm: string;
   feedbackResponsavel?: string;

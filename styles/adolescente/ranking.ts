@@ -1,0 +1,319 @@
+import { colors } from "@/constants/colors";
+import { StyleSheet } from "react-native";
+
+export const adolescenteRankingStyles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#F3F4F6",
+  },
+  scroll: {
+    flex: 1,
+  },
+  content: {
+    gap: 14,
+  },
+  hero: {
+    paddingHorizontal: 14,
+    paddingBottom: 18,
+  },
+  backButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+  heroTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 6,
+  },
+  heroTitle: {
+    color: "#FFFFFF",
+    fontSize: 30,
+    fontWeight: "700",
+  },
+  heroSubtitle: {
+    color: "rgba(255,255,255,0.9)",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  filterWrap: {
+    paddingHorizontal: 16,
+  },
+  filterRow: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 6,
+    borderWidth: 1,
+    borderColor: "#ECEEF3",
+    shadowColor: "#101828",
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  filterButton: {
+    flex: 1,
+    minHeight: 34,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  filterButtonActive: {
+    backgroundColor: "#FF5A00",
+  },
+  filterLabel: {
+    color: "#475467",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  filterLabelActive: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+  currentCard: {
+    marginHorizontal: 16,
+    borderRadius: 18,
+    padding: 16,
+  },
+  currentLabel: {
+    color: "#FDEBFF",
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 12,
+  },
+  currentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  currentUserWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+  currentAvatar: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarEmoji: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#FFF",
+  },
+  currentName: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  currentMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 4,
+  },
+  currentRank: {
+    color: "#FFFFFF",
+    fontSize: 28,
+    fontWeight: "700",
+  },
+  currentScoreWrap: {
+    alignItems: "flex-end",
+  },
+  currentScore: {
+    color: "#FFFFFF",
+    fontSize: 36,
+    fontWeight: "700",
+    lineHeight: 38,
+  },
+  currentScoreLabel: {
+    color: "#FDEBFF",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  trendNeutral: {
+    color: "#98A2B3",
+    fontSize: 16,
+    lineHeight: 16,
+  },
+  card: {
+    marginHorizontal: 16,
+    backgroundColor: colors.neutral.white,
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#ECEEF3",
+    shadowColor: "#101828",
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  cardHeader: {
+    marginBottom: 14,
+  },
+  cardTitle: {
+    color: "#344054",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  podiumRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  podiumItem: {
+    flex: 1,
+    alignItems: "center",
+  },
+  podiumAvatar: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  firstAvatar: {
+    width: 74,
+    height: 74,
+    borderRadius: 37,
+    backgroundColor: "#FFC107",
+  },
+  secondAvatar: {
+    backgroundColor: "#C9CED7",
+  },
+  thirdAvatar: {
+    backgroundColor: "#FF8A00",
+  },
+  podiumBase: {
+    width: "100%",
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    gap: 2,
+    marginBottom: 8,
+  },
+  firstBase: {
+    minHeight: 86,
+    backgroundColor: "#FFC107",
+  },
+  secondBase: {
+    minHeight: 74,
+    backgroundColor: "#BFC5CF",
+  },
+  thirdBase: {
+    minHeight: 66,
+    backgroundColor: "#FF8A00",
+  },
+  podiumPlace: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  podiumName: {
+    color: "#344054",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  podiumPoints: {
+    color: "#667085",
+    fontSize: 12,
+    marginTop: 2,
+  },
+  listTitle: {
+    color: "#344054",
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 14,
+  },
+  fullList: {
+    gap: 10,
+  },
+  listItem: {
+    minHeight: 66,
+    borderRadius: 14,
+    backgroundColor: "#F8FAFC",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#EEF2F6",
+  },
+  listItemHighlighted: {
+    backgroundColor: "#FBF5FF",
+    borderColor: "#D8B4FE",
+  },
+  listLeading: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
+  },
+  rankBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rankBadgeGold: {
+    backgroundColor: "#FFE8A3",
+  },
+  rankBadgeSilver: {
+    backgroundColor: "#E5E7EB",
+  },
+  rankBadgeBronze: {
+    backgroundColor: "#F6C7A6",
+  },
+  rankNumberBubble: {
+    minWidth: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#4F8DF8",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+  },
+  rankNumberText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  inlineAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#E5E7EB",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  inlineAvatarEmoji: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#475467",
+  },
+  listName: {
+    color: "#344054",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  listPoints: {
+    color: "#667085",
+    fontSize: 12,
+    marginTop: 2,
+  },
+});
