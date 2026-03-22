@@ -89,7 +89,7 @@ export default function ConcluirMissaoScreen() {
         comentario || undefined,
       );
 
-      Alert.alert("Sucesso", "Missao enviada para validacao.", [
+      Alert.alert("Sucesso", "Missão enviada para validação.", [
         {
           text: "OK",
           onPress: () => router.replace("/(protected)/adolescente/home"),
@@ -121,10 +121,10 @@ export default function ConcluirMissaoScreen() {
           <Feather name="arrow-left" size={18} color="#101828" />
           <Text style={styles.notFoundBackText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.notFoundTitle}>Missao nao encontrada</Text>
+        <Text style={styles.notFoundTitle}>Missão nao encontrada</Text>
         <Text style={styles.notFoundText}>
           {error ??
-            "Nao foi possivel abrir o envio para validacao dessa missao."}
+            "Nao foi possivel abrir o envio para validacao dessa missão."}
         </Text>
       </SafeAreaView>
     );
@@ -141,7 +141,7 @@ export default function ConcluirMissaoScreen() {
           <Feather name="arrow-left" size={22} color="#FFF" />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Marcar como Concluida</Text>
+        <Text style={styles.headerTitle}>Marcar como Concluída</Text>
         <Text style={styles.headerSubtitle}>{missaoTitulo}</Text>
       </View>
 
@@ -159,16 +159,16 @@ export default function ConcluirMissaoScreen() {
               <Ionicons name="checkmark" size={34} color="#FFF" />
             </View>
           </View>
-          <Text style={styles.confirmTitle}>Missao Concluida?</Text>
+          <Text style={styles.confirmTitle}>Missão Concluída?</Text>
           <Text style={styles.confirmText}>
-            Voce esta prestes a marcar esta missao como concluida. Adicione um
-            comentario para acelerar a aprovacao.
+            Voce esta prestes a marcar esta missão como concluída. Adicione um
+            comentário para acelerar a aprovação.
           </Text>
         </View>
 
         <View style={styles.rewardCard}>
           <Text style={styles.rewardLabel}>
-            Valor a Receber (apos aprovacao)
+            Valor a Receber (após aprovação)
           </Text>
           <Text style={styles.rewardValue}>{formatCurrency(recompensa)}</Text>
         </View>
@@ -176,13 +176,13 @@ export default function ConcluirMissaoScreen() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Feather name="message-square" size={16} color="#2563EB" />
-            <Text style={styles.cardTitle}>Adicionar Comentario</Text>
+            <Text style={styles.cardTitle}>Adicionar Comentário</Text>
           </View>
 
           <TextInput
             value={comentario}
             onChangeText={setComentario}
-            placeholder="Descreva como completou a missao, dificuldades que encontrou, etc..."
+            placeholder="Descreva como completou a missão, dificuldades que encontrou, etc..."
             placeholderTextColor="#98A2B3"
             multiline
             textAlignVertical="top"
@@ -197,7 +197,7 @@ export default function ConcluirMissaoScreen() {
               size={18}
               color="#9333EA"
             />
-            <Text style={styles.cardTitle}>Anexar Foto de Comprovacao</Text>
+            <Text style={styles.cardTitle}>Anexar Foto de Comprovação</Text>
           </View>
 
           <TouchableOpacity
@@ -246,7 +246,7 @@ export default function ConcluirMissaoScreen() {
           >
             <Feather name="send" size={16} color="#FFF" />
             <Text style={styles.submitButtonText}>
-              {saving ? "Enviando..." : "Enviar para Validacao"}
+              {saving ? "Enviando..." : "Enviar para Validação"}
             </Text>
           </TouchableOpacity>
         </View>

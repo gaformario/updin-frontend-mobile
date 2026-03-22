@@ -1,4 +1,8 @@
 import type {
+  AdolescenteConquistas,
+  AdolescenteEstatisticas,
+  AdolescenteNotificacao,
+  AdolescenteXpSemanal,
   Adolescente,
   Conta,
   Mesada,
@@ -44,11 +48,14 @@ export type MesadaResponse = Mesada;
 export type ContaResponse = Conta;
 export type ContaMovimentacoesResponse = Movimentacao[];
 export type MovimentacaoResponse = Movimentacao;
+export type AdolescenteEstatisticasResponse = AdolescenteEstatisticas;
+export type AdolescenteConquistasResponse = AdolescenteConquistas;
+export type AdolescenteXpSemanalResponse = AdolescenteXpSemanal;
+export type AdolescenteNotificacoesResponse = AdolescenteNotificacao[];
 export type ResponsavelMissoesResponse = Missao[];
 export type AdolescenteMissoesResponse = MissaoAtribuicao[];
 export type MissaoAtribuicaoResponse = MissaoAtribuicao;
-export type ResponsavelQuizzesResponse = Quiz[];
-export type AdolescenteQuizzesResponse = Quiz[];
+export type PublicQuizzesResponse = Quiz[];
 export type QuizResponse = Quiz;
 export type QuizTentativaResponse = QuizTentativa;
 export type RankingApiResponse = RankingResponse;
@@ -129,6 +136,7 @@ export interface CreateQuizPerguntaRequest {
 
 export interface CreateQuizRequest {
   titulo: string;
+  categoria: string;
   descricao?: string;
   perguntas: CreateQuizPerguntaRequest[];
 }

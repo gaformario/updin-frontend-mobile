@@ -8,7 +8,13 @@ import { getInitials } from "@/utils/initials";
 import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -62,14 +68,29 @@ export default function SelecionarAdolescenteScreen() {
       </View>
 
       {loading ? (
-        <View style={[selectAdoStyle.listContent, { flex: 1, justifyContent: "center" }]}>
+        <View
+          style={[
+            selectAdoStyle.listContent,
+            { flex: 1, justifyContent: "center" },
+          ]}
+        >
           <ActivityIndicator size="large" color="#2F6BFF" />
         </View>
       ) : error ? (
-        <View style={[selectAdoStyle.listContent, { flex: 1, justifyContent: "center" }]}>
+        <View
+          style={[
+            selectAdoStyle.listContent,
+            { flex: 1, justifyContent: "center" },
+          ]}
+        >
           <Text style={selectAdoStyle.name}>{error}</Text>
-          <TouchableOpacity style={selectAdoStyle.card} onPress={() => void carregar()}>
-            <Text style={selectAdoStyle.logoutButtonText}>Tentar novamente</Text>
+          <TouchableOpacity
+            style={selectAdoStyle.card}
+            onPress={() => void carregar()}
+          >
+            <Text style={selectAdoStyle.logoutButtonText}>
+              Tentar novamente
+            </Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -95,7 +116,7 @@ export default function SelecionarAdolescenteScreen() {
 
                 <View>
                   <Text style={selectAdoStyle.name}>{item.nome}</Text>
-                  <Text style={selectAdoStyle.caption}>Saldo disponivel</Text>
+                  <Text style={selectAdoStyle.caption}>Saldo disponível</Text>
                 </View>
               </View>
 

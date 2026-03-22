@@ -56,6 +56,156 @@ export const adolescenteHomeStyles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   notificationBadgeText: { color: "#FFF", fontSize: 10, fontWeight: "700" },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.48)",
+    justifyContent: "flex-end",
+  },
+  modalSheet: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    gap: 14,
+  },
+  modalHandle: {
+    width: 42,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: "#D0D5DD",
+    alignSelf: "center",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  modalTitle: {
+    color: "#101828",
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  modalSubtitle: {
+    color: "#667085",
+    fontSize: 13,
+    marginTop: 4,
+  },
+  modalCloseButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F2F4F7",
+  },
+  notificationList: {
+    gap: 10,
+  },
+  notificationCard: {
+    borderRadius: 18,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    padding: 14,
+    gap: 12,
+  },
+  notificationCardRead: {
+    opacity: 0.72,
+  },
+  notificationCardTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  notificationIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#DCFCE7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notificationContent: {
+    flex: 1,
+  },
+  notificationTitle: {
+    color: "#101828",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  notificationSubTitle: {
+    color: "#667085",
+    fontSize: 13,
+    marginTop: 2,
+  },
+  notificationMeta: {
+    alignItems: "flex-end",
+    gap: 4,
+  },
+  notificationXpBadge: {
+    borderRadius: 999,
+    backgroundColor: "#ECFDF3",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  notificationXpBadgeText: {
+    color: "#027A48",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  notificationDate: {
+    color: "#98A2B3",
+    fontSize: 11,
+    fontWeight: "500",
+  },
+  notificationMissionTitle: {
+    color: "#344054",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  notificationMessage: {
+    color: "#667085",
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  notificationMoneyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  notificationMoneyLabel: {
+    color: "#667085",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  notificationMoneyValue: {
+    color: "#16A34A",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  notificationEmpty: {
+    borderRadius: 18,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    paddingVertical: 26,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    gap: 8,
+  },
+  notificationEmptyTitle: {
+    color: "#101828",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  notificationEmptyText: {
+    color: "#667085",
+    fontSize: 13,
+    textAlign: "center",
+    lineHeight: 19,
+  },
   balanceCard: {
     borderRadius: 18,
     padding: 16,
@@ -75,10 +225,14 @@ export const adolescenteHomeStyles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: "rgba(255,255,255,0.22)",
     overflow: "hidden",
+    flexDirection: "row",
   },
-  progressFill: {
+  progressMesadaFill: {
     height: "100%",
-    borderRadius: 999,
+    backgroundColor: "#FACC15",
+  },
+  progressMissoesFill: {
+    height: "100%",
     backgroundColor: "#22C55E",
   },
   progressText: {

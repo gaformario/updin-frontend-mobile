@@ -1,66 +1,29 @@
 import { useAuth } from "@/features/auth/context/AuthContext";
-import { buscarResumoPerfilDoAdolescente } from "@/services/adolescente";
-import { buscarRankingParaTela } from "@/services/ranking";
+import {
+  buscarConquistasDoAdolescente,
+  buscarEstatisticasDoAdolescente,
+  buscarXpSemanalDoAdolescente,
+} from "@/services/adolescente";
 import { adolescentePerfilStyles as stylePainel } from "@/styles/adolescente/perfil";
-import type { AdolescenteProfileResumo } from "@/types/view-models";
+import type {
+  AdolescenteConquista,
+  AdolescenteConquistas,
+  AdolescenteEstatisticas,
+  AdolescenteXpSemanal,
+} from "@/types/entities";
 import { getErrorMessage } from "@/utils/errors";
 import { getInitials } from "@/utils/initials";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-
-const conquistas = [
-  {
-    key: "primeira-missao",
-    label: "Primeira\nMissao",
-    icon: <Feather name="target" size={22} color="#7C3AED" />,
-    active: true,
-  },
-  {
-    key: "poupador",
-    label: "Poupador",
-    icon: (
-      <MaterialCommunityIcons
-        name="piggy-bank-outline"
-        size={22}
-        color="#16A34A"
-      />
-    ),
-    active: true,
-  },
-  {
-    key: "estudante",
-    label: "Estudante",
-    icon: <Ionicons name="book-outline" size={22} color="#2563EB" />,
-    active: true,
-  },
-  {
-    key: "estrela",
-    label: "Estrela",
-    icon: <Ionicons name="star-outline" size={22} color="#F59E0B" />,
-    active: true,
-  },
-  {
-    key: "focado",
-    label: "Focado",
-    icon: <Feather name="crosshair" size={22} color="#98A2B3" />,
-    active: false,
-  },
-  {
-    key: "sequencia",
-    label: "Sequencia",
-    icon: <MaterialCommunityIcons name="fire" size={22} color="#98A2B3" />,
-    active: false,
-  },
-];
 
 const configuracoes = [
   {
@@ -71,7 +34,7 @@ const configuracoes = [
   },
   {
     key: "notificacoes",
-    label: "Notificacoes",
+    label: "Notificações",
     icon: <Ionicons name="notifications-outline" size={16} color="#A855F7" />,
     backgroundColor: "#F3E8FF",
   },
@@ -83,30 +46,86 @@ const configuracoes = [
   },
 ];
 
-const evolucaoSemanal = [
-  { key: "s1", semana: "S1", pontos: 0 },
-  { key: "s2", semana: "S2", pontos: 0 },
-  { key: "s3", semana: "S3", pontos: 0 },
-  { key: "s4", semana: "S4", pontos: 0 },
-  { key: "s5", semana: "S5", pontos: 0 },
-];
+function normalizeKey(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function getConquistaMeta(conquista: AdolescenteConquista) {
+  const key = `${normalizeKey(conquista.codigo)}|${normalizeKey(conquista.nome)}`;
+
+  if (key.includes("primeira")) {
+    return {
+      icon: <Feather name="target" size={20} color="#7C3AED" />,
+      activeBackgroundColor: "#F3E8FF",
+    };
+  }
+
+  if (key.includes("poupador")) {
+    return {
+      icon: (
+        <MaterialCommunityIcons
+          name="piggy-bank-outline"
+          size={20}
+          color="#16A34A"
+        />
+      ),
+      activeBackgroundColor: "#DCFCE7",
+    };
+  }
+
+  if (key.includes("estudante")) {
+    return {
+      icon: <Ionicons name="book-outline" size={20} color="#2563EB" />,
+      activeBackgroundColor: "#DBEAFE",
+    };
+  }
+
+  if (key.includes("focado")) {
+    return {
+      icon: <Feather name="crosshair" size={20} color="#F97316" />,
+      activeBackgroundColor: "#FFEDD5",
+    };
+  }
+
+  if (key.includes("estrela")) {
+    return {
+      icon: <Ionicons name="star-outline" size={20} color="#F59E0B" />,
+      activeBackgroundColor: "#FEF3C7",
+    };
+  }
+
+  if (key.includes("sequencia")) {
+    return {
+      icon: <MaterialCommunityIcons name="fire" size={20} color="#EF4444" />,
+      activeBackgroundColor: "#FEE2E2",
+    };
+  }
+
+  return {
+    icon: <Feather name="award" size={20} color="#8B5CF6" />,
+    activeBackgroundColor: "#F3E8FF",
+  };
+}
+
+type PerfilData = {
+  estatisticas: AdolescenteEstatisticas;
+  conquistas: AdolescenteConquistas;
+  xpSemanal: AdolescenteXpSemanal;
+};
 
 export default function PerfilScreen() {
   const { session, signOut } = useAuth();
   const insets = useSafeAreaInsets();
   const adolescenteId = session?.perfis.adolescenteId;
-  const responsavelId =
-    session?.usuario.tipo === "adolescente" &&
-    session?.perfil &&
-    "responsavelId" in session.perfil
-      ? session.perfil.responsavelId
-      : null;
-  const [resumo, setResumo] = useState<AdolescenteProfileResumo | null>(null);
+  const [perfilData, setPerfilData] = useState<PerfilData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
-    if (!session || !adolescenteId) {
+    if (!adolescenteId) {
       setLoading(false);
       return;
     }
@@ -114,24 +133,23 @@ export default function PerfilScreen() {
     try {
       setLoading(true);
       setError(null);
-      const ranking = await buscarRankingParaTela({
-        periodo: "geral",
-        adolescenteId,
-        responsavelId,
-      });
-      const profile = await buscarResumoPerfilDoAdolescente({
-        adolescenteId,
-        usuario: session.usuario,
-        ranking,
-      });
+      const [estatisticas, conquistas, xpSemanal] = await Promise.all([
+        buscarEstatisticasDoAdolescente(adolescenteId),
+        buscarConquistasDoAdolescente(adolescenteId),
+        buscarXpSemanalDoAdolescente(adolescenteId),
+      ]);
 
-      setResumo(profile);
+      setPerfilData({
+        estatisticas,
+        conquistas,
+        xpSemanal,
+      });
     } catch (requestError) {
       setError(getErrorMessage(requestError));
     } finally {
       setLoading(false);
     }
-  }, [adolescenteId, responsavelId, session]);
+  }, [adolescenteId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -143,6 +161,18 @@ export default function PerfilScreen() {
     await signOut();
     router.replace("/(auth)/login-adolescente");
   }
+
+  const semanas = useMemo(
+    () =>
+      [...(perfilData?.xpSemanal.semanas ?? [])].sort(
+        (left, right) => left.numero - right.numero,
+      ),
+    [perfilData?.xpSemanal.semanas],
+  );
+  const maiorXpSemanal = Math.max(
+    ...semanas.map((semana) => semana.xpGanho),
+    1,
+  );
 
   if (loading) {
     return (
@@ -159,7 +189,7 @@ export default function PerfilScreen() {
     );
   }
 
-  if (error || !resumo) {
+  if (error || !perfilData || !session) {
     return (
       <SafeAreaView style={stylePainel.profileScreen}>
         <View
@@ -176,27 +206,41 @@ export default function PerfilScreen() {
     );
   }
 
-  const estatisticas = [
+  const { estatisticas, conquistas, xpSemanal } = perfilData;
+  const estatisticasResumo = [
     {
       key: "missoes",
-      label: "Missoes",
-      value: resumo.totalMissoes,
+      label: "Missões",
+      value: String(estatisticas.missoesConcluidas),
       icon: <Feather name="target" size={18} color="#A855F7" />,
       backgroundColor: "#F3E8FF",
     },
     {
       key: "quizzes",
       label: "Quizzes",
-      value: resumo.totalQuizzes,
+      value: String(estatisticas.quizzesCompletos),
       icon: <Ionicons name="book-outline" size={18} color="#3B82F6" />,
       backgroundColor: "#DBEAFE",
     },
     {
       key: "conquistas",
       label: "Conquistas",
-      value: resumo.totalConquistas,
+      value: `${estatisticas.conquistasAlcancadas}/${estatisticas.totalConquistas}`,
       icon: <Feather name="award" size={18} color="#F59E0B" />,
       backgroundColor: "#FEF3C7",
+    },
+    {
+      key: "xp",
+      label: "XP Total",
+      value: String(estatisticas.xpTotal),
+      icon: (
+        <MaterialCommunityIcons
+          name="flash-outline"
+          size={18}
+          color="#16A34A"
+        />
+      ),
+      backgroundColor: "#DCFCE7",
     },
   ];
 
@@ -220,7 +264,7 @@ export default function PerfilScreen() {
           <View style={stylePainel.profileAvatarWrap}>
             <View style={stylePainel.profileAvatar}>
               <Text style={stylePainel.profileAvatarText}>
-                {getInitials(resumo.nome)}
+                {getInitials(session.usuario.nome)}
               </Text>
             </View>
 
@@ -232,8 +276,10 @@ export default function PerfilScreen() {
             </TouchableOpacity>
           </View>
 
-          <Text style={stylePainel.profileName}>{resumo.nome}</Text>
-          <Text style={stylePainel.profileHandle}>@{resumo.usuario}</Text>
+          <Text style={stylePainel.profileName}>{session.usuario.nome}</Text>
+          <Text style={stylePainel.profileHandle}>
+            @{session.usuario.usuario}
+          </Text>
         </LinearGradient>
 
         <Animated.View entering={FadeInDown.duration(220).delay(30)}>
@@ -241,7 +287,7 @@ export default function PerfilScreen() {
             <Text style={stylePainel.profileSectionTitle}>Estatísticas</Text>
 
             <View style={stylePainel.profileStatsRow}>
-              {estatisticas.map((item) => (
+              {estatisticasResumo.map((item) => (
                 <View key={item.key} style={stylePainel.profileStatItem}>
                   <View
                     style={[
@@ -263,33 +309,53 @@ export default function PerfilScreen() {
           <View style={stylePainel.profileSectionCard}>
             <View style={stylePainel.profileSectionHeader}>
               <Feather name="award" size={14} color="#F59E0B" />
-              <Text style={stylePainel.profileSectionTitle}>
-                Minhas Conquistas
+              <Text style={stylePainel.profileSectionTitle}>Conquistas</Text>
+              <Text style={stylePainel.profileSectionMeta}>
+                {conquistas.conquistasAlcancadas}/{conquistas.totalConquistas}
               </Text>
             </View>
 
             <View style={stylePainel.profileBadgeGrid}>
-              {conquistas.map((item) => (
-                <View
-                  key={item.key}
-                  style={[
-                    stylePainel.profileBadgeCard,
-                    item.active
-                      ? stylePainel.profileBadgeCardActive
-                      : stylePainel.profileBadgeCardInactive,
-                  ]}
-                >
-                  <Text style={stylePainel.profileBadgeEmoji}>{item.icon}</Text>
-                  <Text
+              {conquistas.conquistas.map((item) => {
+                const meta = getConquistaMeta(item);
+
+                return (
+                  <View
+                    key={item.codigo}
                     style={[
-                      stylePainel.profileBadgeLabel,
-                      !item.active && stylePainel.profileBadgeLabelInactive,
+                      stylePainel.profileBadgeCard,
+                      item.conquistada
+                        ? [
+                            stylePainel.profileBadgeCardActive,
+                            { backgroundColor: meta.activeBackgroundColor },
+                          ]
+                        : stylePainel.profileBadgeCardInactive,
                     ]}
                   >
-                    {item.label}
-                  </Text>
-                </View>
-              ))}
+                    <View style={stylePainel.profileBadgeIconWrap}>
+                      {meta.icon}
+                    </View>
+                    <Text
+                      style={[
+                        stylePainel.profileBadgeLabel,
+                        !item.conquistada &&
+                          stylePainel.profileBadgeLabelInactive,
+                      ]}
+                    >
+                      {item.nome}
+                    </Text>
+                    <Text
+                      style={[
+                        stylePainel.profileBadgeDescription,
+                        !item.conquistada &&
+                          stylePainel.profileBadgeDescriptionInactive,
+                      ]}
+                    >
+                      {item.descricao}
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
           </View>
         </Animated.View>
@@ -303,28 +369,56 @@ export default function PerfilScreen() {
                 color="#22C55E"
               />
               <Text style={stylePainel.profileSectionTitle}>
-                Evolução Mensal
+                Evolução Semanal
+              </Text>
+              <Text style={stylePainel.profileSectionMeta}>
+                {xpSemanal.xpTotal} XP
               </Text>
             </View>
 
-            <View style={stylePainel.profileEvolutionCard}>
-              <View style={stylePainel.profileEvolutionRow}>
-                {evolucaoSemanal.map((item) => (
-                  <View key={item.key} style={stylePainel.profileEvolutionItem}>
-                    <Text style={stylePainel.profileEvolutionValue}>
-                      {item.pontos}
-                    </Text>
-                    <Text style={stylePainel.profileEvolutionWeek}>
-                      {item.semana}
-                    </Text>
-                  </View>
-                ))}
+            {semanas.length ? (
+              <View style={stylePainel.profileEvolutionCard}>
+                <View style={stylePainel.profileEvolutionRow}>
+                  {semanas.map((item) => (
+                    <View
+                      key={item.semana}
+                      style={stylePainel.profileEvolutionItem}
+                    >
+                      <Text style={stylePainel.profileEvolutionValue}>
+                        +{item.xpGanho}
+                      </Text>
+                      <View style={stylePainel.profileEvolutionBarTrack}>
+                        <View
+                          style={[
+                            stylePainel.profileEvolutionBarFill,
+                            {
+                              height: `${Math.max(
+                                (item.xpGanho / maiorXpSemanal) * 100,
+                                12,
+                              )}%`,
+                            },
+                          ]}
+                        />
+                      </View>
+                      <Text style={stylePainel.profileEvolutionWeek}>
+                        S{item.numero}
+                      </Text>
+                      <Text style={stylePainel.profileEvolutionAccumulated}>
+                        {item.xpAcumulado} XP
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+
+                <Text style={stylePainel.profileEvolutionCaption}>
+                  XP ganho por semana
+                </Text>
               </View>
-
-              <Text style={stylePainel.profileEvolutionCaption}>
-                Pontos XP por semana
+            ) : (
+              <Text style={stylePainel.profileEmptyText}>
+                Ainda não há semanas com progresso de XP para exibir.
               </Text>
-            </View>
+            )}
           </View>
         </Animated.View>
 

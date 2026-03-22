@@ -91,7 +91,7 @@ function MissaoRow({
   const precisaValidar = item.status === "aguardando_validacao";
   const statusColor = precisaValidar ? "#F97316" : "#6B7280";
   const statusLabel = precisaValidar
-    ? "Aguardando validacao"
+    ? "Aguardando validação"
     : item.status === "em_andamento"
       ? "Em andamento"
       : item.status === "aprovada"
@@ -221,7 +221,7 @@ export default function AdolescentePainelFinanceiroScreen() {
   if (!painelFinanceiro) {
     return (
       <SafeAreaView style={stylePainel.loadingContainer} edges={["bottom"]}>
-        <Text style={stylePainel.emptyTitle}>Adolescente nao encontrado.</Text>
+        <Text style={stylePainel.emptyTitle}>Adolescente não encontrado.</Text>
         <TouchableOpacity
           style={stylePainel.emptyButton}
           onPress={() => router.replace(RESPONSAVEL_SELECT_ROUTE as any)}
@@ -289,7 +289,7 @@ export default function AdolescentePainelFinanceiroScreen() {
             </View>
 
             <View style={stylePainel.balanceMiniCard}>
-              <Text style={stylePainel.miniLabel}>Variavel (20%)</Text>
+              <Text style={stylePainel.miniLabel}>Variável (20%)</Text>
               <Text style={stylePainel.miniValue}>
                 {formatCurrency(painelFinanceiro.variavel)}
               </Text>
@@ -305,7 +305,7 @@ export default function AdolescentePainelFinanceiroScreen() {
           />
           <ActionCard
             icon={<Feather name="target" size={22} color="#A855F7" />}
-            label="Criar Missao"
+            label="Criar Missão"
             onPress={handleOpenCriarMissao}
           />
         </View>
@@ -322,13 +322,13 @@ export default function AdolescentePainelFinanceiroScreen() {
             ))
           ) : (
             <Text style={stylePainel.rowSubtitle}>
-              Nenhuma movimentacao encontrada.
+              Nenhuma movimentação encontrada.
             </Text>
           )}
         </View>
 
         <View style={stylePainel.sectionCard}>
-          <Text style={stylePainel.sectionTitle}>Missoes Ativas</Text>
+          <Text style={stylePainel.sectionTitle}>Missões Ativas</Text>
 
           {painelFinanceiro.missoesAtivas.length ? (
             painelFinanceiro.missoesAtivas.map((item) => (
@@ -339,8 +339,24 @@ export default function AdolescentePainelFinanceiroScreen() {
               />
             ))
           ) : (
+            <Text style={stylePainel.rowSubtitle}>Nenhuma missão ativa.</Text>
+          )}
+        </View>
+
+        <View style={stylePainel.sectionCard}>
+          <Text style={stylePainel.sectionTitle}>Aguardando Validação</Text>
+
+          {painelFinanceiro.missoesAguardandoValidacao.length ? (
+            painelFinanceiro.missoesAguardandoValidacao.map((item) => (
+              <MissaoRow
+                key={item.id}
+                adolescenteId={painelFinanceiro.adolescenteId}
+                item={item}
+              />
+            ))
+          ) : (
             <Text style={stylePainel.rowSubtitle}>
-              Nenhuma missao atribuida.
+              Nenhuma missão aguardando validação.
             </Text>
           )}
         </View>

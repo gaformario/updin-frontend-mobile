@@ -188,7 +188,7 @@ export default function ConfigurarMesadaScreen() {
         </View>
 
         <View style={configMesadaStyles.card}>
-          <Text style={configMesadaStyles.label}>Divisao Automatica</Text>
+          <Text style={configMesadaStyles.label}>Divisão Automática</Text>
 
           <View
             style={[
@@ -223,12 +223,12 @@ export default function ConfigurarMesadaScreen() {
               <Text
                 style={[configMesadaStyles.splitTitle, { color: "#EA580C" }]}
               >
-                Parte Variavel (20%)
+                Parte Variável (20%)
               </Text>
               <Text
                 style={[configMesadaStyles.splitSubtitle, { color: "#EA580C" }]}
               >
-                Para missoes e recompensas
+                Para missões e recompensas
               </Text>
             </View>
             <Text style={[configMesadaStyles.splitValue, { color: "#EA580C" }]}>
@@ -268,7 +268,7 @@ export default function ConfigurarMesadaScreen() {
         <View style={[configMesadaStyles.card, configMesadaStyles.switchCard]}>
           <View>
             <Text style={configMesadaStyles.labelNoMargin}>
-              Ativar mesada automatica
+              Ativar mesada automática
             </Text>
             <Text style={configMesadaStyles.helperText}>
               O valor sera creditado automaticamente

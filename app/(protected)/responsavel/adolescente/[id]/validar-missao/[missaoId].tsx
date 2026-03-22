@@ -94,7 +94,10 @@ export default function ValidarMissaoScreen() {
         }
       } catch (requestError) {
         if (active) {
-          Alert.alert(getErrorTitle(requestError), getErrorMessage(requestError));
+          Alert.alert(
+            getErrorTitle(requestError),
+            getErrorMessage(requestError),
+          );
         }
       } finally {
         if (active) {
@@ -119,20 +122,25 @@ export default function ValidarMissaoScreen() {
       setSaving(true);
 
       if (action === "aprovar") {
-        await aprovarMissaoDoAdolescente(String(id), String(missaoId), feedback);
+        await aprovarMissaoDoAdolescente(
+          String(id),
+          String(missaoId),
+          feedback,
+        );
       } else {
         await recusarMissaoDoAdolescente();
       }
 
       Alert.alert(
-        action === "aprovar" ? "Missao aprovada" : "Missao recusada",
+        action === "aprovar" ? "Missão aprovada" : "Missão recusada",
         action === "aprovar"
-          ? "A missao foi validada com sucesso."
+          ? "A missão foi validada com sucesso."
           : "A API atual nao oferece endpoint de recusa.",
         [
           {
             text: "OK",
-            onPress: () => router.replace(`/responsavel/adolescente/${String(id)}` as any),
+            onPress: () =>
+              router.replace(`/responsavel/adolescente/${String(id)}` as any),
           },
         ],
       );
@@ -155,7 +163,7 @@ export default function ValidarMissaoScreen() {
     return (
       <SafeAreaView style={validarMissaoStyles.loadingContainer}>
         <Text style={validarMissaoStyles.notFoundText}>
-          Missao nao encontrada.
+          Missão não encontrada.
         </Text>
       </SafeAreaView>
     );
@@ -174,9 +182,9 @@ export default function ValidarMissaoScreen() {
           <Feather name="arrow-left" size={22} color="#FFF" />
         </TouchableOpacity>
 
-        <Text style={validarMissaoStyles.headerTitle}>Validar Missao</Text>
+        <Text style={validarMissaoStyles.headerTitle}>Validar Missão</Text>
         <Text style={validarMissaoStyles.headerSubtitle}>
-          Aguardando sua aprovacao
+          Aguardando sua aprovação
         </Text>
       </View>
 
@@ -192,7 +200,7 @@ export default function ValidarMissaoScreen() {
           <View style={validarMissaoStyles.dateRow}>
             <Feather name="calendar" size={14} color="#667085" />
             <Text style={validarMissaoStyles.dateText}>
-              Concluida em: {formatDateTime(missao.concluidaEm)}
+              Concluída em: {formatDateTime(missao.concluidaEm)}
             </Text>
           </View>
         </View>
@@ -206,12 +214,12 @@ export default function ValidarMissaoScreen() {
           </Text>
         </View>
 
-        <InfoCard title="Descricao da Missao">
+        <InfoCard title="Descrição da Missão">
           <Text style={validarMissaoStyles.cardText}>{missao.descricao}</Text>
         </InfoCard>
 
         <InfoCard
-          title="Comentario do Adolescente"
+          title="Comentário do Adolescente"
           icon={<Feather name="message-square" size={16} color="#2563EB" />}
           highlighted
         >
@@ -221,7 +229,7 @@ export default function ValidarMissaoScreen() {
         </InfoCard>
 
         <InfoCard
-          title="Evidencias Anexadas"
+          title="Evidências Anexadas"
           icon={
             <MaterialCommunityIcons
               name="image-outline"
@@ -233,7 +241,10 @@ export default function ValidarMissaoScreen() {
           <View style={validarMissaoStyles.evidenceGrid}>
             {missao.evidencias.length ? (
               missao.evidencias.map((evidencia) => (
-                <View key={evidencia.id} style={validarMissaoStyles.evidenceCard}>
+                <View
+                  key={evidencia.id}
+                  style={validarMissaoStyles.evidenceCard}
+                >
                   {evidencia.imagem ? (
                     <Image
                       source={evidencia.imagem}
@@ -252,7 +263,9 @@ export default function ValidarMissaoScreen() {
                 </View>
               ))
             ) : (
-              <Text style={validarMissaoStyles.cardText}>Nenhuma evidencia enviada.</Text>
+              <Text style={validarMissaoStyles.cardText}>
+                Nenhuma evidencia enviada.
+              </Text>
             )}
           </View>
         </InfoCard>
@@ -261,7 +274,7 @@ export default function ValidarMissaoScreen() {
           <TextInput
             value={feedback}
             onChangeText={setFeedback}
-            placeholder="Deixe um comentario para o adolescente..."
+            placeholder="Deixe um comentário para o adolescente..."
             placeholderTextColor="#98A2B3"
             multiline
             textAlignVertical="top"

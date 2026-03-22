@@ -10,11 +10,11 @@ export const adolescenteQuizzesStyles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    gap: 14,
+    gap: 12,
   },
   hero: {
-    paddingHorizontal: 14,
-    paddingBottom: 18,
+    paddingHorizontal: 16,
+    paddingBottom: 54,
   },
   backButton: {
     width: 34,
@@ -32,7 +32,7 @@ export const adolescenteQuizzesStyles = StyleSheet.create({
   },
   heroTitle: {
     color: "#FFFFFF",
-    fontSize: 30,
+    fontSize: 32,
     fontWeight: "700",
   },
   heroSubtitle: {
@@ -40,27 +40,30 @@ export const adolescenteQuizzesStyles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
   },
+  summarySection: {
+    marginTop: -28,
+    paddingHorizontal: 16,
+  },
   summaryRow: {
     flexDirection: "row",
     gap: 8,
-    paddingHorizontal: 16,
   },
   summaryCard: {
     flex: 1,
     backgroundColor: colors.neutral.white,
-    borderRadius: 16,
-    paddingVertical: 14,
+    borderRadius: 18,
+    paddingVertical: 16,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#ECEEF3",
+    borderColor: "#E7E8EE",
     shadowColor: "#101828",
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
   },
   summaryValue: {
     color: "#101828",
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700",
     marginBottom: 4,
   },
@@ -74,26 +77,26 @@ export const adolescenteQuizzesStyles = StyleSheet.create({
   },
   quizCard: {
     backgroundColor: colors.neutral.white,
-    borderRadius: 18,
+    borderRadius: 20,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#ECEEF3",
+    borderColor: "#E7E8EE",
     shadowColor: "#101828",
     shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    shadowRadius: 12,
+    elevation: 3,
   },
   quizHeader: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
-    marginBottom: 14,
+    marginBottom: 12,
   },
   quizIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: "#F3EEFF",
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: "#F4EFFF",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -109,11 +112,11 @@ export const adolescenteQuizzesStyles = StyleSheet.create({
   quizTitle: {
     flex: 1,
     color: "#101828",
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
   },
   quizCategory: {
-    color: "#98A2B3",
+    color: "#8A94A6",
     fontSize: 12,
     marginTop: 4,
     marginBottom: 8,
@@ -140,7 +143,7 @@ export const adolescenteQuizzesStyles = StyleSheet.create({
   badgeBase: {
     borderRadius: 999,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
   },
   badgeTextBase: {
     fontSize: 11,
@@ -150,7 +153,7 @@ export const adolescenteQuizzesStyles = StyleSheet.create({
     backgroundColor: "#EEF2FF",
   },
   badgeBlueText: {
-    color: "#6384FF",
+    color: "#7A86FF",
   },
   badgeOrange: {
     backgroundColor: "#FFF1E6",
@@ -165,18 +168,22 @@ export const adolescenteQuizzesStyles = StyleSheet.create({
     color: "#23B26D",
   },
   actionButton: {
+    borderRadius: 11,
+    overflow: "hidden",
+  },
+  actionButtonPrimary: {
     minHeight: 42,
-    borderRadius: 10,
+    borderRadius: 11,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
   },
-  actionButtonPrimary: {
-    backgroundColor: "#6D28F0",
-  },
   actionButtonMuted: {
     backgroundColor: "#F2F4F7",
+  },
+  actionButtonError: {
+    marginHorizontal: 16,
   },
   actionButtonText: {
     fontSize: 15,
@@ -187,5 +194,23 @@ export const adolescenteQuizzesStyles = StyleSheet.create({
   },
   actionButtonTextMuted: {
     color: "#475467",
+  },
+  emptyCard: {
+    backgroundColor: colors.neutral.white,
+    borderRadius: 18,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#ECEEF3",
+    gap: 8,
+  },
+  emptyTitle: {
+    color: "#101828",
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  emptyText: {
+    color: "#667085",
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

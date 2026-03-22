@@ -55,6 +55,14 @@ export default function CriarMissaoScreen() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const recompensaNumerica = parseInputDecimal(recompensa);
+  const canCreate =
+    !saving &&
+    Boolean(id) &&
+    titulo.trim().length > 0 &&
+    descricao.trim().length > 0 &&
+    recompensaNumerica > 0;
+
   useEffect(() => {
     let active = true;
 
@@ -97,7 +105,7 @@ export default function CriarMissaoScreen() {
   }
 
   async function handleCreate() {
-    if (!id || saving) {
+    if (!id || !canCreate) {
       return;
     }
 
@@ -113,11 +121,11 @@ export default function CriarMissaoScreen() {
       await criarMissaoParaAdolescente({
         responsavelId,
         adolescenteId: String(id),
-        titulo,
-        descricao: descricao || undefined,
-        recompensaFinanceira: parseInputDecimal(recompensa),
+        titulo: titulo.trim(),
+        descricao: descricao.trim(),
+        recompensaFinanceira: recompensaNumerica,
         dataLimite: parseDateInput(prazo),
-        observacao: observacoes || undefined,
+        observacao: observacoes.trim() || undefined,
       });
 
       Alert.alert("Sucesso", "Missao criada e atribuida com sucesso.", [
@@ -159,7 +167,7 @@ export default function CriarMissaoScreen() {
           style={criarMissaoStyles.createButton}
           onPress={handleClose}
         >
-          <Text style={criarMissaoStyles.createText}>←</Text>
+          <Text style={criarMissaoStyles.createText}>Voltar</Text>
         </TouchableOpacity>
       </View>
     );
@@ -168,7 +176,7 @@ export default function CriarMissaoScreen() {
   return (
     <View style={criarMissaoStyles.screen}>
       <View style={[criarMissaoStyles.header, { paddingTop: insets.top + 10 }]}>
-        <Text style={criarMissaoStyles.headerTitle}>Criar Nova Missao</Text>
+        <Text style={criarMissaoStyles.headerTitle}>Criar Nova Missão</Text>
         <Text style={criarMissaoStyles.headerSubtitle}>{nome}</Text>
       </View>
 
@@ -181,18 +189,18 @@ export default function CriarMissaoScreen() {
       >
         <View style={criarMissaoStyles.highlightCard}>
           <Text style={criarMissaoStyles.highlightLabel}>
-            Saldo Variavel Disponivel
+            Saldo Variável Disponível
           </Text>
           <Text style={criarMissaoStyles.highlightValue}>
             {formatCurrency(saldoVariavel)}
           </Text>
           <Text style={criarMissaoStyles.highlightCaption}>
-            Limite para novas missoes
+            Limite para novas missões
           </Text>
         </View>
 
         <View style={criarMissaoStyles.card}>
-          <Text style={criarMissaoStyles.label}>Titulo da Missao</Text>
+          <Text style={criarMissaoStyles.label}>Titulo da Missão</Text>
           <View style={criarMissaoStyles.inputRow}>
             <Feather name="target" size={16} color="#98A2B3" />
             <TextInput
@@ -206,13 +214,13 @@ export default function CriarMissaoScreen() {
         </View>
 
         <View style={criarMissaoStyles.card}>
-          <Text style={criarMissaoStyles.label}>Descricao Detalhada</Text>
+          <Text style={criarMissaoStyles.label}>Descrição Detalhada</Text>
           <TextInput
             value={descricao}
             onChangeText={setDescricao}
             placeholder="Descreva o que precisa ser feito..."
             placeholderTextColor="#98A2B3"
-            style={[criarMissaoStyles.textArea]}
+            style={criarMissaoStyles.textArea}
             multiline
             textAlignVertical="top"
           />
@@ -248,11 +256,11 @@ export default function CriarMissaoScreen() {
         </View>
 
         <View style={criarMissaoStyles.card}>
-          <Text style={criarMissaoStyles.label}>Observacoes (Opcional)</Text>
+          <Text style={criarMissaoStyles.label}>Observações (Opcional)</Text>
           <TextInput
             value={observacoes}
             onChangeText={setObservacoes}
-            placeholder="Informacoes adicionais..."
+            placeholder="Informações adicionais..."
             placeholderTextColor="#98A2B3"
             style={criarMissaoStyles.textArea}
             multiline
@@ -261,7 +269,7 @@ export default function CriarMissaoScreen() {
         </View>
 
         <View style={criarMissaoStyles.card}>
-          <Text style={criarMissaoStyles.label}>Tipo de Validacao</Text>
+          <Text style={criarMissaoStyles.label}>Tipo de Validação</Text>
           <View style={criarMissaoStyles.segmentRow}>
             <TouchableOpacity
               style={[
@@ -278,7 +286,7 @@ export default function CriarMissaoScreen() {
                     criarMissaoStyles.segmentTextActive,
                 ]}
               >
-                Aprovacao Manual
+                Aprovação Manual
               </Text>
             </TouchableOpacity>
 
@@ -297,7 +305,7 @@ export default function CriarMissaoScreen() {
                     criarMissaoStyles.segmentTextActive,
                 ]}
               >
-                Validacao Automatica
+                Validação Automática
               </Text>
             </TouchableOpacity>
           </View>
@@ -313,12 +321,20 @@ export default function CriarMissaoScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={criarMissaoStyles.createButton}
+            style={[
+              criarMissaoStyles.createButton,
+              canCreate ? criarMissaoStyles.createButtonEnabled : null,
+            ]}
             onPress={() => void handleCreate()}
-            disabled={saving}
+            disabled={!canCreate}
           >
-            <Text style={criarMissaoStyles.createText}>
-              {saving ? "Criando..." : "Criar Missao"}
+            <Text
+              style={[
+                criarMissaoStyles.createText,
+                canCreate ? criarMissaoStyles.createTextEnabled : null,
+              ]}
+            >
+              {saving ? "Criando..." : "Criar Missão"}
             </Text>
           </TouchableOpacity>
         </View>

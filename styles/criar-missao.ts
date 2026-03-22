@@ -143,11 +143,17 @@ export const criarMissaoStyles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#C084FC",
+    backgroundColor: "#D0D5DD",
+  },
+  createButtonEnabled: {
+    backgroundColor: "#9A00FF",
   },
   createText: {
-    color: "#FFF",
+    color: "#667085",
     fontWeight: "700",
     fontSize: 16,
+  },
+  createTextEnabled: {
+    color: "#FFF",
   },
 });

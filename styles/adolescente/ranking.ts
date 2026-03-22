@@ -42,6 +42,30 @@ export const adolescenteRankingStyles = StyleSheet.create({
   },
   filterWrap: {
     paddingHorizontal: 16,
+    gap: 8,
+  },
+  filterHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  filterSectionLabel: {
+    color: "#667085",
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  refreshIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  refreshLabel: {
+    color: "#FF5A00",
+    fontSize: 12,
+    fontWeight: "600",
   },
   filterRow: {
     flexDirection: "row",
@@ -73,6 +97,11 @@ export const adolescenteRankingStyles = StyleSheet.create({
   filterLabelActive: {
     color: "#FFFFFF",
     fontWeight: "600",
+  },
+  inlineErrorText: {
+    color: "#D92D20",
+    fontSize: 12,
+    fontWeight: "500",
   },
   currentCard: {
     marginHorizontal: 16,
@@ -139,6 +168,7 @@ export const adolescenteRankingStyles = StyleSheet.create({
     color: "#FDEBFF",
     fontSize: 12,
     fontWeight: "500",
+    opacity: 0.7,
   },
   trendNeutral: {
     color: "#98A2B3",
@@ -158,12 +188,20 @@ export const adolescenteRankingStyles = StyleSheet.create({
     elevation: 2,
   },
   cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 14,
   },
   cardTitle: {
     color: "#344054",
     fontSize: 15,
     fontWeight: "700",
+  },
+  cardMeta: {
+    color: "#98A2B3",
+    fontSize: 12,
+    fontWeight: "500",
   },
   podiumRow: {
     flexDirection: "row",
@@ -174,6 +212,9 @@ export const adolescenteRankingStyles = StyleSheet.create({
   podiumItem: {
     flex: 1,
     alignItems: "center",
+  },
+  podiumPlaceholder: {
+    flex: 1,
   },
   podiumAvatar: {
     width: 58,

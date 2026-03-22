@@ -1,7 +1,12 @@
+import { NotificationsModal } from "@/components/adolescente/notifications-modal";
 import { useAuth } from "@/features/auth/context/AuthContext";
-import { buscarPainelFinanceiroDoAdolescente } from "@/services/adolescente";
+import {
+  buscarPainelFinanceiroDoAdolescente,
+  listarNotificacoesDoAdolescente,
+} from "@/services/adolescente";
 import { adolescenteHomeStyles as stylePainel } from "@/styles/adolescente/home";
 import type { AdolescentePainelFinanceiro } from "@/types/painel-financeiro";
+import type { MissaoValidadaNotificacaoResumo } from "@/types/view-models";
 import { formatCurrency } from "@/utils/currency";
 import { getErrorMessage } from "@/utils/errors";
 import { getInitials } from "@/utils/initials";
@@ -11,13 +16,16 @@ import {
   MaterialCommunityIcons,
   Octicons,
 } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useState } from "react";
-import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 const quickActions = [
   {
@@ -42,23 +50,30 @@ const quickActions = [
   },
 ];
 
-const missionIcons = ["car-sport-outline", "book-outline", "cart-outline"] as const;
-const missionProgress = {
-  mesada: 0.8,
-  missoes: 0.2,
-};
+const missionIcons = [
+  "car-sport-outline",
+  "book-outline",
+  "cart-outline",
+] as const;
 
 export default function HomeAdolescente() {
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
   const adolescenteId = session?.perfis.adolescenteId;
-  const [painel, setPainel] = useState<AdolescentePainelFinanceiro | null>(null);
+  const [painel, setPainel] = useState<AdolescentePainelFinanceiro | null>(
+    null,
+  );
+  const [notificacoes, setNotificacoes] = useState<
+    MissaoValidadaNotificacaoResumo[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notificationsVisible, setNotificationsVisible] = useState(false);
 
   const carregar = useCallback(async () => {
     if (!adolescenteId) {
       setPainel(null);
+      setNotificacoes([]);
       setLoading(false);
       return;
     }
@@ -66,8 +81,13 @@ export default function HomeAdolescente() {
     try {
       setLoading(true);
       setError(null);
-      const data = await buscarPainelFinanceiroDoAdolescente(adolescenteId);
-      setPainel(data);
+      const [painelData, notificacoesData] = await Promise.all([
+        buscarPainelFinanceiroDoAdolescente(adolescenteId),
+        listarNotificacoesDoAdolescente(adolescenteId).catch(() => []),
+      ]);
+
+      setPainel(painelData);
+      setNotificacoes(notificacoesData);
     } catch (requestError) {
       setError(getErrorMessage(requestError));
     } finally {
@@ -81,10 +101,28 @@ export default function HomeAdolescente() {
     }, [carregar]),
   );
 
+  function handleOpenNotifications() {
+    setNotificationsVisible(true);
+  }
+
+  function handleCloseNotifications() {
+    setNotificationsVisible(false);
+  }
+
+  function handleOpenNotification(notificacaoId: string) {
+    setNotificationsVisible(false);
+    router.push(`/(protected)/adolescente/notificacao/${notificacaoId}` as any);
+  }
+
   if (loading) {
     return (
       <SafeAreaView style={stylePainel.container}>
-        <View style={[stylePainel.scrollContent, { flex: 1, justifyContent: "center" }]}> 
+        <View
+          style={[
+            stylePainel.scrollContent,
+            { flex: 1, justifyContent: "center" },
+          ]}
+        >
           <ActivityIndicator size="large" color="#8B3DFF" />
         </View>
       </SafeAreaView>
@@ -94,9 +132,19 @@ export default function HomeAdolescente() {
   if (error || !painel) {
     return (
       <SafeAreaView style={stylePainel.container}>
-        <View style={[stylePainel.scrollContent, { flex: 1, justifyContent: "center" }]}> 
-          <Text style={stylePainel.sectionTitle}>{error ?? "Nao foi possivel carregar o painel."}</Text>
-          <TouchableOpacity style={stylePainel.actionCard} onPress={() => void carregar()}>
+        <View
+          style={[
+            stylePainel.scrollContent,
+            { flex: 1, justifyContent: "center" },
+          ]}
+        >
+          <Text style={stylePainel.sectionTitle}>
+            {error ?? "Nao foi possivel carregar o painel."}
+          </Text>
+          <TouchableOpacity
+            style={stylePainel.actionCard}
+            onPress={() => void carregar()}
+          >
             <Text style={stylePainel.actionLabel}>Tentar novamente</Text>
           </TouchableOpacity>
         </View>
@@ -105,9 +153,22 @@ export default function HomeAdolescente() {
   }
 
   const primeiroNome = painel.nome.split(" ")[0];
+  const mesadaPercentual = Math.round(painel.percentualSaldoMesada * 100);
+  const missoesPercentual =
+    painel.percentualSaldoMesada + painel.percentualSaldoMissoes > 0
+      ? Math.max(0, 100 - mesadaPercentual)
+      : 0;
 
   return (
     <SafeAreaView style={stylePainel.container} edges={[]}>
+      <NotificationsModal
+        visible={notificationsVisible}
+        notificacoes={notificacoes}
+        bottomInset={insets.bottom}
+        onClose={handleCloseNotifications}
+        onOpenNotification={handleOpenNotification}
+      />
+
       <Animated.ScrollView
         entering={FadeIn.duration(180)}
         style={stylePainel.scrollView}
@@ -123,26 +184,36 @@ export default function HomeAdolescente() {
           <View style={stylePainel.heroTopRow}>
             <View style={stylePainel.headerUserRow}>
               <View style={stylePainel.headerAvatar}>
-                <Text style={stylePainel.headerAvatarEmoji}>{getInitials(painel.nome)}</Text>
+                <Text style={stylePainel.headerAvatarEmoji}>
+                  {getInitials(painel.nome)}
+                </Text>
               </View>
               <View>
                 <Text style={stylePainel.headerName}>Ola, {primeiroNome}!</Text>
-                <Text style={stylePainel.headerSubtitle}>Bem-vindo de volta</Text>
+                <Text style={stylePainel.headerSubtitle}>
+                  Bem-vindo de volta
+                </Text>
               </View>
             </View>
 
-            <TouchableOpacity activeOpacity={0.8} style={stylePainel.notificationButton}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={stylePainel.notificationButton}
+              onPress={handleOpenNotifications}
+            >
               <Ionicons name="notifications-outline" size={20} color="#FFF" />
-              <View style={stylePainel.notificationBadge}>
-                <Text style={stylePainel.notificationBadgeText}>
-                  {painel.missoesAtivas.filter((missao) => missao.status === "aguardando_validacao").length}
-                </Text>
-              </View>
+              {notificacoes.length ? (
+                <View style={stylePainel.notificationBadge}>
+                  <Text style={stylePainel.notificationBadgeText}>
+                    {notificacoes.length}
+                  </Text>
+                </View>
+              ) : null}
             </TouchableOpacity>
           </View>
 
           <View style={stylePainel.balanceCard}>
-            <Text style={stylePainel.balanceLabel}>Saldo Disponivel</Text>
+            <Text style={stylePainel.balanceLabel}>Saldo Disponível</Text>
             <Text style={stylePainel.balanceValue}>
               {formatCurrency(painel.saldoTotal)}
             </Text>
@@ -150,20 +221,28 @@ export default function HomeAdolescente() {
             <View style={stylePainel.progressTrack}>
               <View
                 style={[
-                  stylePainel.progressFill,
-                  { width: `${missionProgress.mesada * 100}%` },
+                  stylePainel.progressMesadaFill,
+                  { width: `${painel.percentualSaldoMesada * 100}%` },
+                ]}
+              />
+              <View
+                style={[
+                  stylePainel.progressMissoesFill,
+                  { width: `${painel.percentualSaldoMissoes * 100}%` },
                 ]}
               />
             </View>
 
-            <Text style={stylePainel.progressText}>80% Mesada | 20% Missoes</Text>
+            <Text style={stylePainel.progressText}>
+              {mesadaPercentual}% Mesada | {missoesPercentual}% Missões
+            </Text>
           </View>
         </LinearGradient>
 
         <Animated.View entering={FadeInDown.duration(220).delay(40)}>
           <View style={stylePainel.sectionCard}>
             <View style={stylePainel.sectionHeader}>
-              <Text style={stylePainel.sectionTitle}>Missoes Pendentes</Text>
+              <Text style={stylePainel.sectionTitle}>Missões Pendentes</Text>
               <Text style={stylePainel.sectionMeta}>
                 {painel.missoesAtivas.length} ativas
               </Text>
@@ -177,7 +256,9 @@ export default function HomeAdolescente() {
                     activeOpacity={0.86}
                     style={stylePainel.missionCard}
                     onPress={() =>
-                      router.push(`/(protected)/adolescente/missao/${missao.id}` as any)
+                      router.push(
+                        `/(protected)/adolescente/missao/${missao.id}` as any,
+                      )
                     }
                   >
                     <View style={stylePainel.rowIcon}>
@@ -201,7 +282,9 @@ export default function HomeAdolescente() {
                   </TouchableOpacity>
                 ))
               ) : (
-                <Text style={stylePainel.rowSubtitle}>Nenhuma missao pendente.</Text>
+                <Text style={stylePainel.rowSubtitle}>
+                  Nenhuma missão pendente.
+                </Text>
               )}
             </View>
           </View>
@@ -236,7 +319,8 @@ export default function HomeAdolescente() {
             </View>
 
             <Text style={stylePainel.tipText}>
-              Guardar uma parte da sua mesada antes de gastar ajuda a criar o habito de poupar.
+              Guardar uma parte da sua mesada antes de gastar ajuda a criar o
+              hábito de poupar.
             </Text>
           </LinearGradient>
         </Animated.View>

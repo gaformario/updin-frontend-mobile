@@ -1,10 +1,12 @@
 export type QuizStatus = "novo" | "em_progresso" | "concluido";
-export type RankingPeriod = "semanal" | "mensal" | "geral";
+export type RankingScope = "global" | "familia";
+export type RankingPeriod = "geral" | "semanal" | "mensal";
 export type RankingMovement = "up" | "same" | "down";
 
-export interface AdolescenteQuizResumo {
+export interface PublicQuizResumo {
   id: string;
   titulo: string;
+  descricaoCurta: string;
   categoria: string;
   questoes: number;
   dificuldade: 1 | 2 | 3;
@@ -12,26 +14,54 @@ export interface AdolescenteQuizResumo {
   acao: string;
 }
 
-export interface QuizzesResumo {
+export interface PublicQuizzesResumo {
   concluidos: number;
   pontosXp: number;
   acertosPercentual: number;
 }
 
+export interface QuizTentativaResumo {
+  tentativaId: string;
+  pontuacao: number;
+  acertos: number;
+  totalPerguntas: number;
+  percentualAcertos: number;
+  finalizadoEm: string;
+}
+
 export interface RankingListaItem {
   id: string;
   nome: string;
-  pontos: number;
+  usuario: string;
+  xp: number;
   posicao: number;
   isCurrentUser?: boolean;
   movimento?: RankingMovement;
 }
 
-export interface AdolescenteProfileResumo {
-  nome: string;
-  usuario: string;
-  totalMissoes: number;
-  totalQuizzes: number;
-  totalConquistas: number;
-  pontosXp: number;
+export interface RankingTelaResumo {
+  escopo: string;
+  criterio: string;
+  periodo: RankingPeriod;
+  totalParticipantes: number;
+  top3: RankingListaItem[];
+  classificacaoCompleta: RankingListaItem[];
+}
+
+export interface MissaoValidadaNotificacaoResumo {
+  id: string;
+  titulo: string;
+  subtitulo: string;
+  mensagem: string;
+  missaoTitulo: string;
+  xpGanho: number;
+  valorCreditado: number;
+  saldoAnterior: number;
+  novoSaldo: number;
+  temCreditoFinanceiro: boolean;
+  atribucaoId?: string;
+  missaoId?: string;
+  validadaEm: string;
+  criadoEm: string;
+  lidaEm: string | null;
 }

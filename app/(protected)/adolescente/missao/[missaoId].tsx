@@ -23,7 +23,7 @@ import {
 } from "react-native-safe-area-context";
 
 const statusLabels: Record<MissaoValidacao["status"], string> = {
-  aguardando_validacao: "Status: Aguardando validacao",
+  aguardando_validacao: "Status: Aguardando validação",
   em_andamento: "Status: Em andamento",
   pendente: "Status: Pendente",
   aprovada: "Status: Aprovada",
@@ -146,7 +146,7 @@ export default function MissaoDetalhesScreen() {
           <Feather name="arrow-left" size={22} color="#FFF" />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Detalhes da Missao</Text>
+        <Text style={styles.headerTitle}>Detalhes da Missão</Text>
         <Text style={styles.headerSubtitle}>
           Complete e ganhe sua recompensa
         </Text>
@@ -193,7 +193,7 @@ export default function MissaoDetalhesScreen() {
         </View>
 
         <InfoCard
-          title="Descricao Completa"
+          title="Descrição Completa"
           icon={<Feather name="file-text" size={16} color="#475467" />}
         >
           <Text style={styles.descriptionText}>{missao.descricao}</Text>
@@ -209,13 +209,13 @@ export default function MissaoDetalhesScreen() {
         </InfoCard>
 
         <InfoCard
-          title="Observacoes do Responsavel"
+          title="Observações do Responsável"
           icon={<Feather name="eye" size={16} color="#2563EB" />}
           highlighted
         >
           <Text style={styles.infoText}>
             {missao.observacoesResponsavel ||
-              "Nenhuma observacao adicional enviada pelo responsavel."}
+              "Nenhuma observação adicional enviada pelo responsável."}
           </Text>
         </InfoCard>
 
@@ -230,8 +230,8 @@ export default function MissaoDetalhesScreen() {
             <Text style={styles.tipTitle}>Dica</Text>
           </View>
           <Text style={styles.tipText}>
-            Quanto melhor voce documentar a conclusao da missao, mais rapida
-            sera a aprovacao.
+            Quanto melhor voce documentar a conclusão da missão, mais rápida
+            será a aprovação.
           </Text>
         </LinearGradient>
 
@@ -245,7 +245,7 @@ export default function MissaoDetalhesScreen() {
           }
         >
           <Feather name="check-circle" size={18} color="#FFF" />
-          <Text style={styles.completeButtonText}>Marcar como Concluida</Text>
+          <Text style={styles.completeButtonText}>Marcar como Concluída</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

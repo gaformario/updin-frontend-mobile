@@ -46,6 +46,10 @@ export interface AdolescentePainelFinanceiro {
   responsavelId: string;
   nome: string;
   saldoTotal: number;
+  saldoMesada: number;
+  saldoMissoes: number;
+  percentualSaldoMesada: number;
+  percentualSaldoMissoes: number;
   mesadaId: string | null;
   mesadaValor: number;
   mesadaPeriodicidade: Periodicidade | null;
@@ -54,4 +58,5 @@ export interface AdolescentePainelFinanceiro {
   variavel: number;
   extratoRecente: ExtratoItem[];
   missoesAtivas: MissaoValidacao[];
+  missoesAguardandoValidacao: MissaoValidacao[];
 }

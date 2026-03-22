@@ -1,13 +1,22 @@
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { buscarRankingParaTela } from "@/services/ranking";
 import { adolescenteRankingStyles as styles } from "@/styles/adolescente/ranking";
-import type { RankingListaItem, RankingPeriod } from "@/types/view-models";
+import type {
+  RankingListaItem,
+  RankingPeriod,
+  RankingTelaResumo,
+} from "@/types/view-models";
 import { getErrorMessage } from "@/utils/errors";
 import { getInitials } from "@/utils/initials";
-import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import {
+  Entypo,
+  Feather,
+  Ionicons,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import {
@@ -15,15 +24,23 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
-const filters: { key: RankingPeriod; label: string }[] = [
+const PERIOD_FILTERS: { key: RankingPeriod; label: string }[] = [
+  { key: "geral", label: "Geral" },
   { key: "semanal", label: "Semanal" },
   { key: "mensal", label: "Mensal" },
-  { key: "geral", label: "Geral" },
 ];
 
-function TrendIcon() {
-  return <Text style={styles.trendNeutral}>-</Text>;
-}
+// function getPeriodoLabel(periodo: RankingPeriod) {
+//   if (periodo === "semanal") {
+//     return "Semanal";
+//   }
+
+//   if (periodo === "mensal") {
+//     return "Mensal";
+//   }
+
+//   return "Geral";
+// }
 
 function PodiumCard({
   item,
@@ -37,18 +54,18 @@ function PodiumCard({
       avatarStyle: styles.firstAvatar,
       baseStyle: styles.firstBase,
       icon: "trophy-outline" as const,
-      label: "1o",
+      label: "1º",
     },
     second: {
       avatarStyle: styles.secondAvatar,
       baseStyle: styles.secondBase,
-      label: "2o",
+      label: "2º",
     },
     third: {
       avatarStyle: styles.thirdAvatar,
       baseStyle: styles.thirdBase,
       icon: "medal-outline" as const,
-      label: "3o",
+      label: "3º",
     },
   }[variant];
 
@@ -66,7 +83,7 @@ function PodiumCard({
         <Text style={styles.podiumPlace}>{config.label}</Text>
       </View>
       <Text style={styles.podiumName}>{item.nome.split(" ")[0]}</Text>
-      <Text style={styles.podiumPoints}>{item.pontos} pts</Text>
+      <Text style={styles.podiumPoints}>{item.xp} XP</Text>
     </View>
   );
 }
@@ -74,65 +91,117 @@ function PodiumCard({
 export default function RankingScreen() {
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
-  const [period, setPeriod] = useState<RankingPeriod>("semanal");
-  const [ranking, setRanking] = useState<RankingListaItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
   const adolescenteId = session?.perfis.adolescenteId;
-  const responsavelId =
-    session?.usuario.tipo === "adolescente" &&
-    session?.perfil &&
-    "responsavelId" in session.perfil
-      ? session.perfil.responsavelId
-      : null;
+  const cacheRef = useRef<Partial<Record<RankingPeriod, RankingTelaResumo>>>(
+    {},
+  );
+  const [periodo, setPeriodo] = useState<RankingPeriod>("geral");
+  const [rankingData, setRankingData] = useState<RankingTelaResumo | null>(
+    null,
+  );
+  const rankingDataRef = useRef<RankingTelaResumo | null>(null);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [inlineError, setInlineError] = useState<string | null>(null);
+
+  rankingDataRef.current = rankingData;
 
   useEffect(() => {
     let active = true;
 
-    async function carregar() {
+    async function carregarPeriodo(targetPeriodo: RankingPeriod) {
       if (!adolescenteId) {
-        setLoading(false);
+        setInitialLoading(false);
+        setIsRefreshing(false);
         return;
       }
 
+      const cachedData = cacheRef.current[targetPeriodo];
+
+      if (cachedData) {
+        setRankingData(cachedData);
+        setInitialLoading(false);
+        setIsRefreshing(true);
+      } else if (!rankingDataRef.current) {
+        setInitialLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
+
+      setError(null);
+      setInlineError(null);
+
       try {
-        setLoading(true);
-        setError(null);
         const data = await buscarRankingParaTela({
-          periodo: period,
+          escopo: "global",
+          periodo: targetPeriodo,
           adolescenteId,
-          responsavelId,
         });
 
-        if (active) {
-          setRanking(data);
+        if (!active) {
+          return;
+        }
+
+        cacheRef.current[targetPeriodo] = data;
+        setRankingData(data);
+        setError(null);
+        setInlineError(null);
+
+        const periodosPendentes = PERIOD_FILTERS.map(
+          (filter) => filter.key,
+        ).filter(
+          (candidate) =>
+            candidate !== targetPeriodo && !cacheRef.current[candidate],
+        );
+
+        for (const candidate of periodosPendentes) {
+          void buscarRankingParaTela({
+            escopo: "global",
+            periodo: candidate,
+            adolescenteId,
+          })
+            .then((prefetchedData) => {
+              cacheRef.current[candidate] = prefetchedData;
+            })
+            .catch(() => undefined);
         }
       } catch (requestError) {
-        if (active) {
-          setError(getErrorMessage(requestError));
+        if (!active) {
+          return;
+        }
+
+        const message = getErrorMessage(requestError);
+
+        if (!cachedData && !rankingDataRef.current) {
+          setError(message);
+        } else {
+          setInlineError(message);
         }
       } finally {
         if (active) {
-          setLoading(false);
+          setInitialLoading(false);
+          setIsRefreshing(false);
         }
       }
     }
 
-    void carregar();
+    void carregarPeriodo(periodo);
 
     return () => {
       active = false;
     };
-  }, [adolescenteId, period, responsavelId]);
+  }, [adolescenteId, periodo]);
 
   const currentUser = useMemo(
-    () => ranking.find((entry) => entry.isCurrentUser) ?? ranking[0],
-    [ranking],
+    () =>
+      rankingData?.classificacaoCompleta.find((entry) => entry.isCurrentUser) ??
+      rankingData?.classificacaoCompleta[0] ??
+      null,
+    [rankingData],
   );
-  const topThree = ranking.slice(0, 3);
 
-  if (loading) {
+  if (initialLoading && !rankingData) {
     return (
       <SafeAreaView style={styles.screen}>
         <View style={[styles.content, { flex: 1, justifyContent: "center" }]}>
@@ -142,7 +211,7 @@ export default function RankingScreen() {
     );
   }
 
-  if (error) {
+  if (error && !rankingData) {
     return (
       <SafeAreaView style={styles.screen}>
         <View style={[styles.content, { flex: 1, justifyContent: "center" }]}>
@@ -152,11 +221,11 @@ export default function RankingScreen() {
     );
   }
 
-  if (!currentUser) {
+  if (!rankingData || !currentUser) {
     return (
       <SafeAreaView style={styles.screen}>
         <View style={[styles.content, { flex: 1, justifyContent: "center" }]}>
-          <Text style={styles.heroTitle}>Nenhum ranking disponivel.</Text>
+          <Text style={styles.heroTitle}>Nenhum ranking de XP disponível.</Text>
         </View>
       </SafeAreaView>
     );
@@ -181,7 +250,7 @@ export default function RankingScreen() {
         >
           <TouchableOpacity
             activeOpacity={0.82}
-            onPress={() => router.back()}
+            onPress={() => router.replace("/(protected)/adolescente/home")}
             style={styles.backButton}
           >
             <Feather name="arrow-left" size={20} color="#FFF" />
@@ -204,15 +273,25 @@ export default function RankingScreen() {
           entering={FadeInDown.duration(220).delay(40)}
           style={styles.filterWrap}
         >
+          <View style={styles.filterHeader}>
+            <Text style={styles.filterSectionLabel}>Período</Text>
+            {isRefreshing ? (
+              <View style={styles.refreshIndicator}>
+                {/* <ActivityIndicator size="small" color="#FF5A00" /> */}
+                {/* <Text style={styles.refreshLabel}>Atualizando...</Text> */}
+              </View>
+            ) : null}
+          </View>
+
           <View style={styles.filterRow}>
-            {filters.map((filter) => {
-              const active = filter.key === period;
+            {PERIOD_FILTERS.map((filter) => {
+              const active = filter.key === periodo;
 
               return (
                 <TouchableOpacity
                   key={filter.key}
                   activeOpacity={0.85}
-                  onPress={() => setPeriod(filter.key)}
+                  onPress={() => setPeriodo(filter.key)}
                   style={[
                     styles.filterButton,
                     active ? styles.filterButtonActive : null,
@@ -230,6 +309,10 @@ export default function RankingScreen() {
               );
             })}
           </View>
+
+          {inlineError ? (
+            <Text style={styles.inlineErrorText}>{inlineError}</Text>
+          ) : null}
         </Animated.View>
 
         <Animated.View entering={FadeInDown.duration(220).delay(70)}>
@@ -254,13 +337,12 @@ export default function RankingScreen() {
                     <Text style={styles.currentRank}>
                       #{currentUser.posicao}
                     </Text>
-                    <TrendIcon />
                   </View>
                 </View>
               </View>
 
               <View style={styles.currentScoreWrap}>
-                <Text style={styles.currentScore}>{currentUser.pontos}</Text>
+                <Text style={styles.currentScore}>{currentUser.xp}</Text>
                 <Text style={styles.currentScoreLabel}>Pontos XP</Text>
               </View>
             </View>
@@ -272,24 +354,29 @@ export default function RankingScreen() {
           style={styles.card}
         >
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>🏆 Top 3</Text>
+            <Text style={styles.cardTitle}>
+              <Entypo name="trophy" size={18} color="#8A2BE2" /> Top 3
+            </Text>
+            <Text style={styles.cardMeta}>
+              {rankingData.totalParticipantes} participantes
+            </Text>
           </View>
 
           <View style={styles.podiumRow}>
-            {topThree[1] ? (
-              <PodiumCard item={topThree[1]} variant="second" />
+            {rankingData.top3[1] ? (
+              <PodiumCard item={rankingData.top3[1]} variant="second" />
             ) : (
-              <View />
+              <View style={styles.podiumPlaceholder} />
             )}
-            {topThree[0] ? (
-              <PodiumCard item={topThree[0]} variant="first" />
+            {rankingData.top3[0] ? (
+              <PodiumCard item={rankingData.top3[0]} variant="first" />
             ) : (
-              <View />
+              <View style={styles.podiumPlaceholder} />
             )}
-            {topThree[2] ? (
-              <PodiumCard item={topThree[2]} variant="third" />
+            {rankingData.top3[2] ? (
+              <PodiumCard item={rankingData.top3[2]} variant="third" />
             ) : (
-              <View />
+              <View style={styles.podiumPlaceholder} />
             )}
           </View>
         </Animated.View>
@@ -301,9 +388,9 @@ export default function RankingScreen() {
           <Text style={styles.listTitle}>Classificação Completa</Text>
 
           <View style={styles.fullList}>
-            {ranking.map((entry) => (
+            {rankingData.classificacaoCompleta.map((entry) => (
               <View
-                key={`${period}-${entry.id}`}
+                key={`${rankingData.periodo}-${entry.id}`}
                 style={[
                   styles.listItem,
                   entry.isCurrentUser ? styles.listItemHighlighted : null,
@@ -356,15 +443,13 @@ export default function RankingScreen() {
                   <View>
                     <Text style={styles.listName}>
                       {entry.nome}
-                      {entry.isCurrentUser ? " (Você)" : ""}
+                      {entry.isCurrentUser ? " (Voce)" : ""}
                     </Text>
-                    <Text style={styles.listPoints}>
-                      {entry.pontos} pontos XP
-                    </Text>
+                    <Text style={styles.listPoints}>{entry.xp} XP</Text>
                   </View>
                 </View>
 
-                <TrendIcon />
+                <Ionicons name="trending-up" size={20} color="#8B5CF6" />
               </View>
             ))}
           </View>

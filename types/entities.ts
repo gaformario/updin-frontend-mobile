@@ -8,6 +8,8 @@ export type OrigemMovimentacao =
   | "recompensa";
 export type MissaoAtribuicaoStatus = "pendente" | "concluida" | "validada";
 export type RankingEscopo = "global" | "responsavel";
+export type RankingPeriodo = "geral" | "semanal" | "mensal";
+export type AdolescenteNotificacaoTipo = "missao_validada" | (string & {});
 
 export interface BaseEntity {
   criadoEm: string;
@@ -103,8 +105,8 @@ export interface MissaoAtribuicao extends BaseEntity {
 
 export interface Quiz extends BaseEntity {
   id: string;
-  responsavelId: string;
   titulo: string;
+  categoria: string;
   descricao: string | null;
   ativo: boolean;
   atualizadoEm: string;
@@ -145,17 +147,84 @@ export interface QuizResposta {
   correta: boolean;
 }
 
+export interface AdolescenteEstatisticas {
+  adolescenteId: string;
+  missoesConcluidas: number;
+  quizzesCompletos: number;
+  conquistasAlcancadas: number;
+  totalConquistas: number;
+  xpTotal: number;
+}
+
+export interface AdolescenteConquista {
+  codigo: string;
+  nome: string;
+  descricao: string;
+  conquistada: boolean;
+}
+
+export interface AdolescenteConquistas {
+  adolescenteId: string;
+  conquistasAlcancadas: number;
+  totalConquistas: number;
+  conquistas: AdolescenteConquista[];
+}
+
+export interface AdolescenteXpSemana {
+  semana: string;
+  numero: number;
+  inicio: string;
+  fim: string;
+  xpGanho: number;
+  xpAcumulado: number;
+}
+
+export interface AdolescenteXpSemanal {
+  adolescenteId: string;
+  xpTotal: number;
+  semanas: AdolescenteXpSemana[];
+}
+
 export interface RankingItem {
   posicao: number;
   adolescenteId: string;
   nome: string;
   usuario: string;
+  xpTotal: number;
   pontuacaoTotal: number;
   eventosPontuados: number;
 }
 
 export interface RankingResponse {
   escopo: RankingEscopo;
+  criterio: string;
+  periodo: RankingPeriodo;
   totalParticipantes: number;
-  ranking: RankingItem[];
+  top3: RankingItem[];
+  classificacaoCompleta: RankingItem[];
+  ranking?: RankingItem[];
+}
+
+export interface AdolescenteNotificacaoMissaoValidadaDados {
+  atribuicaoId?: string;
+  missaoId?: string;
+  missaoTitulo?: string;
+  xpGanho?: number;
+  valorCreditado?: string;
+  saldoAnterior?: string;
+  novoSaldo?: string;
+  mensagemResponsavel?: string;
+  validadaEm?: string;
+}
+
+export interface AdolescenteNotificacao extends BaseEntity {
+  id: string;
+  adolescenteId: string;
+  tipo: AdolescenteNotificacaoTipo;
+  titulo: string;
+  subtitulo: string;
+  mensagem: string | null;
+  dados?: AdolescenteNotificacaoMissaoValidadaDados | null;
+  lidaEm: string | null;
+  atualizadoEm: string;
 }

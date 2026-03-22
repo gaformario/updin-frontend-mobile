@@ -136,6 +136,30 @@ export default function AdolescenteTabsLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="quiz/[quizId]"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="quiz/[quizId]/responder"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="quiz/tentativa/[tentativaId]"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="notificacao/[notificacaoId]"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
