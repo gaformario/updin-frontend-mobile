@@ -51,11 +51,12 @@ function ActionCard({
 }
 
 function ExtratoRow({ item }: { item: ExtratoItem }) {
-  const isMesada = item.titulo.toLowerCase().includes("mesada");
+  const isMesada = item.categoria === "mesada";
+  const isMissao = item.categoria === "missao";
 
-  const iconName = isMesada ? "dollar-sign" : "check-circle";
-  const iconColor = isMesada ? "#2563EB" : "#7C3AED";
-  const bgColor = isMesada ? "#DBEAFE" : "#EDE9FE";
+  const iconName = isMesada ? "dollar-sign" : isMissao ? "target" : "check-circle";
+  const iconColor = isMesada ? "#2563EB" : isMissao ? "#7C3AED" : "#16A34A";
+  const bgColor = isMesada ? "#DBEAFE" : isMissao ? "#EDE9FE" : "#DCFCE7";
 
   return (
     <View style={stylePainel.row}>

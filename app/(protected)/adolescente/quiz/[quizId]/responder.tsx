@@ -210,7 +210,7 @@ export default function ResponderQuizScreen() {
         >
           <Feather name="arrow-left" size={22} color="#FFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Responder Quiz</Text>
+        <Text style={styles.headerTitle}>Quiz</Text>
         <Text style={styles.headerSubtitle}>{titulo}</Text>
       </View>
 
@@ -245,7 +245,7 @@ export default function ResponderQuizScreen() {
         {perguntas.map((pergunta, questionIndex) => (
           <View key={pergunta.id} style={styles.questionCard}>
             <Text style={styles.questionIndex}>
-              Questao {questionIndex + 1}
+              Questão {questionIndex + 1}
             </Text>
             <Text style={styles.questionText}>{pergunta.enunciado}</Text>
 

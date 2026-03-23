@@ -72,10 +72,15 @@ export interface Movimentacao {
   contaId: string;
   tipo: TipoMovimentacao;
   origem: OrigemMovimentacao;
+  tipoRegistro?: string | null;
+  origemExibicao?: string | null;
   valor: string;
   descricao: string | null;
   saldoApos: string;
   criadoEm: string;
+  missao?: {
+    titulo: string;
+  } | null;
 }
 
 export interface Missao extends BaseEntity {

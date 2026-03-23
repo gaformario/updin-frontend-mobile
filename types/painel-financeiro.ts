@@ -13,6 +13,7 @@ export interface ExtratoItem {
   data: string;
   valor: number;
   tipo: "credito" | "debito";
+  categoria: "mesada" | "missao" | "outro";
 }
 
 export interface MissaoAtiva {

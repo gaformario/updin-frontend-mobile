@@ -350,7 +350,7 @@ export default function QuizzesScreen() {
                 Nenhum quiz publico disponível
               </Text>
               <Text style={styles.emptyText}>
-                Assim que novos quizzes forem publicados, eles aparecerao aqui
+                Assim que novos quizzes forem publicados, eles aparecerão aqui
                 para todo adolescente.
               </Text>
             </View>

@@ -28,15 +28,15 @@ function getPerguntasOrdenadas(perguntas?: QuizPergunta[]) {
 }
 
 function getDifficultyLabel(totalPerguntas: number) {
-  if (totalPerguntas >= 12) {
-    return "Avancado";
-  }
-
   if (totalPerguntas >= 8) {
-    return "Intermediario";
+    return 3;
   }
 
-  return "Inicial";
+  if (totalPerguntas >= 5) {
+    return 2;
+  }
+
+  return 1;
 }
 
 export default function QuizDetalheScreen() {

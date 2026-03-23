@@ -443,13 +443,24 @@ export default function RankingScreen() {
                   <View>
                     <Text style={styles.listName}>
                       {entry.nome}
-                      {entry.isCurrentUser ? " (Voce)" : ""}
+                      {entry.isCurrentUser && (
+                        <Text
+                          style={{
+                            color: "#8B5CF6",
+                            fontSize: 12,
+                            opacity: 0.8,
+                          }}
+                        >
+                          {"  "}
+                          (Você)
+                        </Text>
+                      )}
                     </Text>
                     <Text style={styles.listPoints}>{entry.xp} XP</Text>
                   </View>
                 </View>
 
-                <Ionicons name="trending-up" size={20} color="#8B5CF6" />
+                {/* <Ionicons name="trending-up" size={20} color="#8B5CF6" /> */}
               </View>
             ))}
           </View>

@@ -21,25 +21,12 @@ import {
 } from "react-native-safe-area-context";
 
 type ExtratoCategoria = "mesada" | "missao" | "outro";
-type ExtratoHistoricoItem = ExtratoItem & { categoria: ExtratoCategoria };
 
 const filtros: { key: "tudo" | ExtratoCategoria; label: string }[] = [
   { key: "tudo", label: "Tudo" },
   { key: "mesada", label: "Mesada" },
   { key: "missao", label: "Missões" },
 ];
-
-function getCategoria(item: ExtratoItem): ExtratoCategoria {
-  if (item.titulo.toLowerCase().includes("mesada")) {
-    return "mesada";
-  }
-
-  if (item.titulo.toLowerCase().includes("miss")) {
-    return "missao";
-  }
-
-  return "outro";
-}
 
 function getCategoriaMeta(categoria: ExtratoCategoria) {
   if (categoria === "mesada") {
@@ -61,14 +48,14 @@ function getCategoriaMeta(categoria: ExtratoCategoria) {
   }
 
   return {
-    label: "Movimentacao",
+    label: "Movimentação",
     icon: "credit-card" as const,
     iconColor: "#16A34A",
     iconBackground: "#DCFCE7",
   };
 }
 
-function ExtratoItemCard({ item }: { item: ExtratoHistoricoItem }) {
+function ExtratoItemCard({ item }: { item: ExtratoItem }) {
   const categoria = getCategoriaMeta(item.categoria);
 
   return (
@@ -90,7 +77,12 @@ function ExtratoItemCard({ item }: { item: ExtratoHistoricoItem }) {
       </View>
 
       <View style={stylePainel.statementItemMeta}>
-        <Text style={stylePainel.statementItemValue}>
+        <Text
+          style={[
+            stylePainel.statementItemValue,
+            item.tipo === "debito" ? stylePainel.statementItemValueDebit : null,
+          ]}
+        >
           {item.tipo === "credito" ? "+" : "-"}
           {formatCurrency(item.valor)}
         </Text>
@@ -108,7 +100,7 @@ export default function ExtratoScreen() {
     "tudo",
   );
   const [saldoTotal, setSaldoTotal] = useState(0);
-  const [historico, setHistorico] = useState<ExtratoHistoricoItem[]>([]);
+  const [historico, setHistorico] = useState<ExtratoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -127,9 +119,7 @@ export default function ExtratoScreen() {
       ]);
 
       setSaldoTotal(painel.saldoTotal);
-      setHistorico(
-        extrato.map((item) => ({ ...item, categoria: getCategoria(item) })),
-      );
+      setHistorico(extrato);
     } catch (requestError) {
       setError(getErrorMessage(requestError));
     } finally {
@@ -145,7 +135,7 @@ export default function ExtratoScreen() {
 
   const periodoAtual = historico[0]?.data
     ? formatMonthYear(historico[0].data)
-    : "Mes atual";
+    : "Mês atual";
 
   const itensFiltrados = useMemo(() => {
     if (filtroAtivo === "tudo") {

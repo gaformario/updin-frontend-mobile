@@ -31,6 +31,14 @@ function getMovimentacaoTitulo(
   movimentacao: Movimentacao,
   origem: OrigemMovimentacao = movimentacao.origem,
 ) {
+  if (
+    (movimentacao.tipoRegistro === "missao" ||
+      movimentacao.origemExibicao === "missao") &&
+    movimentacao.missao?.titulo?.trim()
+  ) {
+    return movimentacao.missao.titulo;
+  }
+
   if (movimentacao.descricao?.trim()) {
     return movimentacao.descricao;
   }
@@ -43,6 +51,26 @@ function getMovimentacaoTitulo(
   };
 
   return labels[origem];
+}
+
+function getMovimentacaoCategoria(movimentacao: Movimentacao) {
+  if (
+    movimentacao.tipoRegistro === "missao" ||
+    movimentacao.origemExibicao === "missao" ||
+    movimentacao.origem === "recompensa"
+  ) {
+    return "missao" as const;
+  }
+
+  if (
+    movimentacao.tipoRegistro === "mesada" ||
+    movimentacao.origemExibicao === "mesada" ||
+    movimentacao.origem === "mesada"
+  ) {
+    return "mesada" as const;
+  }
+
+  return "outro" as const;
 }
 
 function mapStatus(status: MissaoAtribuicao["status"]): MissaoAtiva["status"] {
@@ -81,12 +109,13 @@ function buildSaldoPorOrigem(
       }
 
       const valor = parseDecimal(movimentacao.valor);
+      const categoria = getMovimentacaoCategoria(movimentacao);
 
-      if (movimentacao.origem === "mesada") {
+      if (categoria === "mesada") {
         accumulator.mesada += valor;
       }
 
-      if (movimentacao.origem === "recompensa") {
+      if (categoria === "missao") {
         accumulator.missoes += valor;
       }
 
@@ -137,6 +166,7 @@ export function mapExtratoItem(movimentacao: Movimentacao) {
     data: movimentacao.criadoEm,
     valor: parseDecimal(movimentacao.valor),
     tipo: movimentacao.tipo,
+    categoria: getMovimentacaoCategoria(movimentacao),
   } satisfies ExtratoItem;
 }
 
@@ -221,7 +251,7 @@ export function buildPainelFinanceiro(params: {
 export function mapPublicQuizResumo(quiz: Quiz) {
   const quantidadePerguntas = quiz.perguntas?.length ?? 0;
   const dificuldade =
-    quantidadePerguntas >= 12 ? 3 : quantidadePerguntas >= 8 ? 2 : 1;
+    quantidadePerguntas >= 8 ? 3 : quantidadePerguntas >= 5 ? 2 : 1;
   const descricaoCurta = quiz.descricao?.trim() || "Quiz disponível.";
 
   return {

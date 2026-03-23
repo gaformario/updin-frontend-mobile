@@ -83,6 +83,7 @@ export const adolescenteExtratoStyles = StyleSheet.create({
   statementItemDate: { color: "#94A3B8", fontSize: 12, marginTop: 4 },
   statementItemMeta: { alignItems: "flex-end" },
   statementItemValue: { color: "#22C55E", fontSize: 14, fontWeight: "700" },
+  statementItemValueDebit: { color: "#EF4444" },
   statementItemCategory: { color: "#94A3B8", fontSize: 12, marginTop: 4 },
   statementSummaryCard: {
     marginHorizontal: 16,
