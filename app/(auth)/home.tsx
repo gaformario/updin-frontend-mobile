@@ -43,7 +43,7 @@ export default function LoginGeralScreen() {
         <AntDesign name="copyright" size={14} color="#9CA3AF" />
         <Text style={homeStyles.footerText}>
           {" "}
-          Updin • 2026 • Todos os direitos reservados
+          Updin © • 2026 • Todos os direitos reservados
         </Text>
       </View>
     </ScreenContainer>
