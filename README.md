@@ -1,108 +1,108 @@
 # Updin Mobile
 
-Frontend mobile do Updin, uma aplicação de educação financeira gamificada para responsáveis e adolescentes. O projeto foi construído com Expo + React Native e usa `expo-router` para organizar a navegação por rotas.
+Mobile frontend for Updin, a gamified financial education application for guardians and teenagers. The project was built with Expo + React Native and uses `expo-router` to organize route-based navigation.
 
-## Objetivo do app
+## App Purpose
 
-O aplicativo conecta dois perfis:
+The application connects two user profiles:
 
-- `Responsável`: acompanha saldo, configura mesada, cria missões e valida entregas do adolescente.
-- `Adolescente`: acompanha saldo, conclui missões, responde quizzes, consulta ranking e evolui no perfil com XP e conquistas.
+- `Guardian`: monitors the teenager’s balance, configures allowances, creates missions, and validates completed activities.
+- `Teenager`: monitors their balance, completes missions, answers quizzes, checks rankings, and progresses through XP and achievements.
 
-## Como o frontend funciona
+## How the Frontend Works
 
-### Fluxo público
+### Public Flow
 
-- A tela inicial (`/home`) apresenta a entrada para os dois perfis.
-- O login do responsável fica em `/login-responsavel`.
-- O login do adolescente fica em `/login-adolescente`.
-- A sessão fica salva em `AsyncStorage`, permitindo restaurar o acesso ao reabrir o app.
+- The initial screen (`/home`) provides access to both user profiles.
+- The guardian login is available at `/login-responsavel`.
+- The teenager login is available at `/login-adolescente`.
+- The session is stored in `AsyncStorage`, allowing access to be restored when the app is reopened.
 
-### Fluxo autenticado
+### Authenticated Flow
 
-- As rotas protegidas ficam dentro de `app/(protected)`.
-- O `ProtectedLayout` valida se existe sessão e redireciona o usuário para a área correta conforme o tipo de perfil.
-- Quando a API responde `401`, o token e a sessão são limpos automaticamente.
+- Protected routes are located inside `app/(protected)`.
+- The `ProtectedLayout` checks whether a session exists and redirects the user to the correct area based on their profile type.
+- When the API returns a `401` response, the token and session data are automatically cleared.
 
-### Área do responsável
+### Guardian Area
 
-- Seleciona qual adolescente deseja gerenciar.
-- Visualiza painel financeiro com saldo total, divisão entre mesada fixa e parte variável, extrato recente e missões.
-- Configura mesada com periodicidade `Semanal`, `Quinzenal` ou `Mensal`.
-- O valor da mesada é apresentado com divisão automática de `80%` para parte fixa e `20%` para parte variável.
-- Cria novas missões com título, descrição, recompensa, prazo e observações.
-- Valida missões concluídas pelo adolescente e pode registrar feedback na aprovação.
+- Selects which teenager they want to manage.
+- Views a financial dashboard with the total balance, the division between fixed and variable allowance amounts, recent transaction history, and missions.
+- Configures the allowance frequency as `Weekly`, `Biweekly`, or `Monthly`.
+- The allowance amount is automatically divided into `80%` fixed allowance and `20%` variable allowance.
+- Creates new missions with a title, description, reward, deadline, and additional notes.
+- Validates missions completed by the teenager and can provide feedback during approval.
 
-### Área do adolescente
+### Teenager Area
 
-- Acessa uma home com saldo disponível, missões pendentes, notificações e atalhos rápidos.
-- Consulta o extrato com filtros por tipo de movimentação.
-- Navega por um catálogo de quizzes públicos.
-- Responde quizzes, salva progresso local automaticamente e visualiza o resultado final com pontuação e percentual de acertos.
-- Consulta ranking global por período (`geral`, `semanal` e `mensal`).
-- Acessa o perfil com estatísticas, conquistas, evolução semanal de XP e logout.
-- Abre detalhes de missão, envia conclusão para validação e consulta notificações de missão aprovada.
+- Accesses a home screen with the available balance, pending missions, notifications, and quick-access shortcuts.
+- Views the transaction history with filters based on transaction type.
+- Browses a catalog of public quizzes.
+- Answers quizzes, automatically saves progress locally, and views the final result with the score and percentage of correct answers.
+- Views the global ranking by period (`overall`, `weekly`, and `monthly`).
+- Accesses a profile with statistics, achievements, weekly XP progress, and logout.
+- Opens mission details, submits completed missions for validation, and views notifications for approved missions.
 
-## Estrutura principal
+## Main Structure
 
-| Caminho                        | Responsabilidade                                        |
-| ------------------------------ | ------------------------------------------------------- |
-| `app/`                         | Rotas do app com `expo-router`                          |
-| `app/(auth)/`                  | Telas públicas de entrada e login                       |
-| `app/(protected)/responsavel/` | Fluxo do responsável                                    |
-| `app/(protected)/adolescente/` | Fluxo do adolescente, incluindo tabs                    |
-| `features/auth/`               | Contexto de autenticação e restauração de sessão        |
-| `services/`                    | Cliente HTTP, integração com API e adaptadores de dados |
-| `types/`                       | Tipagens de entidades, respostas da API e view models   |
-| `components/`                  | Componentes reutilizáveis de UI e modais                |
-| `styles/`                      | Estilos separados por tela                              |
+| Path                           | Responsibility                                         |
+| ------------------------------ | ------------------------------------------------------ |
+| `app/`                         | Application routes using `expo-router`                 |
+| `app/(auth)/`                  | Public entry and login screens                         |
+| `app/(protected)/responsavel/` | Guardian flow                                          |
+| `app/(protected)/adolescente/` | Teenager flow, including tab navigation                |
+| `features/auth/`               | Authentication context and session restoration         |
+| `services/`                    | HTTP client, API integration, and data adapters        |
+| `types/`                       | Entity types, API responses, and view models           |
+| `components/`                  | Reusable UI components and modals                      |
+| `styles/`                      | Styles separated by screen                             |
 
-## Integração com a API
+## API Integration
 
-O app depende da API do Updin e usa a variável abaixo para montar a base das requisições:
+The app depends on the Updin API and uses the following variable to define the base URL for requests:
 
 ```env
 EXPO_PUBLIC_API_URL=http://localhost:3000/api
 ```
 
-O cliente HTTP:
+The HTTP client:
 
-- adiciona o token Bearer nas requisições autenticadas;
-- trata erros de conectividade;
-- normaliza mensagens vindas da API;
-- encerra a sessão quando encontra resposta `401`.
+- adds the Bearer token to authenticated requests;
+- handles connectivity errors;
+- normalizes messages returned by the API;
+- ends the session when it receives a `401` response.
 
-Principais grupos de consumo:
+Main API resource groups:
 
-- `auth`: login e recuperação do usuário autenticado.
-- `responsaveis`: dados do responsável e adolescentes vinculados.
-- `adolescentes`: conta, mesadas, missões, estatísticas, conquistas, notificações e XP semanal.
-- `missoes`: atribuição, conclusão e validação.
-- `quizzes`: catálogo público, envio de tentativa e consulta de resultado.
-- `ranking`: ranking global e por período.
+- `auth`: login and retrieval of the authenticated user.
+- `responsaveis`: guardian data and linked teenagers.
+- `adolescentes`: account, allowances, missions, statistics, achievements, notifications, and weekly XP.
+- `missoes`: mission assignment, completion, and validation.
+- `quizzes`: public catalog, attempt submission, and result retrieval.
+- `ranking`: global and period-based rankings.
 
-## Como executar o projeto
+## How to Run the Project
 
-1. Instale as dependências:
+1. Install the dependencies:
 
 ```bash
 npm install
 ```
 
-2. Configure o arquivo `.env` com a URL da API:
+2. Configure the `.env` file with the API URL:
 
 ```env
 EXPO_PUBLIC_API_URL=http://localhost:3000/api
 ```
 
-3. Inicie o projeto Expo:
+3. Start the Expo project:
 
 ```bash
-npm expo start
+npx expo start
 ```
 
-4. Abra no ambiente desejado:
+4. Open the project in the desired environment:
 
-- `a` para Android no terminal do Expo
-- `w` para Web
-- escaneie o QR Code no terminal e abra o app Expo Go pelo celular
+- Press `a` in the Expo terminal to open it on Android.
+- Press `w` to open it on the web.
+- Scan the QR code displayed in the terminal and open the app using Expo Go on your mobile device.
